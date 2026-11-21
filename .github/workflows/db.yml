@@ -1,0 +1,39 @@
+name: Databáze – migrace a seed
+
+# Test: automaticky po změně schématu/dat na main.
+# Produkce: jen ručně (Actions → Databáze → Run workflow → production).
+on:
+  push:
+    branches: [main]
+    paths: ['db/**', 'data/**', 'scripts/migrate.mjs', 'shared/schedule.js']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Cílová větev Neonu'
+        type: choice
+        options: [test, production]
+        default: test
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-${{ inputs.target || 'test' }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'production' && 'production' || 'test' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Migrace + seed (${{ inputs.target || 'test' }})
+        run: node scripts/migrate.mjs --seed
+        env:
+          DATABASE_URL: ${{ inputs.target == 'production' && secrets.NEON_PROD_OWNER_URL || secrets.NEON_TEST_OWNER_URL }}

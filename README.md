@@ -43,6 +43,14 @@ npm run build     # sestaví dist/
 npm run dev       # build + lokální server na http://localhost:5173
 ```
 
+## Databáze (Neon)
+
+- Větve `production` a `test`, migrace v `db/migrations/`, granty v `db/grants.sql`, seed v `db/apply.mjs`.
+- Seed jen doplňuje chybějící řádky – opakované spuštění nesmaže výsledky, objednávky ani úpravy z Adminu.
+- Workflow **Databáze – migrace a seed**: po změně `db/` nebo `data/` automaticky na větev `test`; produkce jen ručně přes *Run workflow → production*.
+- Secrets v GitHubu: `NEON_TEST_OWNER_URL`, `NEON_PROD_OWNER_URL` (vlastník schématu, bez poolingu).
+- Lokálně: `DATABASE_URL=… node scripts/migrate.mjs --seed`. Testy používají PGlite, Neon nepotřebují.
+
 ## Nasazení
 
 Push na `main` spustí workflow **Test, build a nasazení**: testy → build → GitHub Pages.
