@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stadion · HC Rytíři Vlašim</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,sans-serif}
+  body{display:grid;place-items:center;text-align:center}
+  h1{font-size:min(8vh,6vw);margin:0}
+  p{font-size:min(4vh,3vw);opacity:.75}
+  time{display:block;font-size:min(12vh,9vw);font-weight:900;font-variant-numeric:tabular-nums;color:#6bff91}
+</style>
+</head>
+<body>
+<div>
+  <h1>O putovní pohár</h1>
+  <time id="clock"></time>
+  <p>Stadionová obrazovka se připravuje · Vlašim · 28. prosince 2026</p>
+</div>
+<script>
+  const fmt = new Intl.DateTimeFormat('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const tick = () => { document.getElementById('clock').textContent = fmt.format(new Date()); };
+  tick(); setInterval(tick, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+# Vánoční turnaj 2. tříd o Putovní pohár
+
+Obsah pro veřejné propozice a první část zápisu. Rozlosování, upřesnění pořadatele a termíny čerpej z DOKUMENTACE.md a dat.
+
+## Základní informace a ustanovení
+
+ZÁKLADNÍ INFORMACE DATUM 28. 12. 2026 MÍSTO Zimní stadion Vlašim KATEGORIE ročník 2019 a mladší, dívky ročník 2018 STARTOVNÉ 8000 Kč STRAVOVÁNÍ v případě zájmu bude zajištěno v restauraci na ZS POŘADATEL Tomáš Vondráček, +420 734 362 033, tomas.vondracek@hcvlasim.cz ZÁKLADNÍ USTANOVENÍ Vánoční turnaj 2. tříd o Putovní pohár je určen pro hráče ročníku 2019. Turnaje se zúčastní celkem 10 týmů. Každý tým odehraje během turnaje celkem 5 utkání. Cílem turnaje je nabídnout dětem dostatek herního prostoru, vyrovnaná utkání a společný hokejový den vedený v duchu fair play. Turnaj se hraje podle platných pravidel ČSLH.
+
+## Systém turnaje a počet hráčů
+
+SYSTÉM TURNAJE Deset týmů bude rozděleno do dvou pětičlenných skupin – skupiny A a B. Jednotlivé skupiny se odehrají systémem každý s každým. Každý tým tak absolvuje 4 utkání v základní skupině. Po skončení skupin následují utkání o konečné umístění: o 1. místo: 1A × 1B o 3. místo: 2A × 2B o 5. místo: 3A × 3B o 7. místo: 4A × 4B o 9. místo: 5A × 5B HERNÍ SYSTÉM Utkání se hrají na třetině ledové plochy s mantinely na modré čáře ve formátu 3 + 1. Minimální počet hráčů na tým: 6 hráčů + 1 brankář. Maximální počet hráčů na tým: 9 hráčů + 2 brankáři.
+
+## Hrací doba, fauly a body
+
+HRACÍ DOBA A FAULY Hrací doba jednoho utkání je 2 × 14 minut s pravidelným střídáním po jedné minutě. Po skončení každé třetiny budou provedeny samostatné nájezdy za fauly odpískané v průběhu dané třetiny. Za každý odpískaný faul získává soupeř jeden samostatný nájezd, který provede faulovaný hráč. Výsledek těchto nájezdů se započítává do skóre utkání. BODOVÁNÍ Bodovat se bude každou třetinu zvlášť: výhra v základní hrací době – 2 body remíza v základní hrací době – 1 bod prohra v základní hrací době – 0 bodů
+
+## Pořadí ve skupinách
+
+Upřesnění pořadatele. Při shodě bodů dvou týmů rozhoduje součet branek obou třetin jejich vzájemného zápasu. Při shodném skóre rozhoduje celkový rozdíl branek ve skupině, vyšší počet vstřelených branek, nižší počet obdržených branek a nakonec los pořadatele. Pokud se v minitabulce oddělí ostatní týmy a dvojice zůstane shodná, posoudí se znovu podle skóre svého vzájemného zápasu.
+
+POŘADÍ V ZÁKL. SKUPINÁCH O pořadí týmů rozhoduje počet získaných bodů. Při rovnosti bodů rozhodují postupně: výsledek vzájemného utkání, rozdíl vstřelených a obdržených branek, vyšší počet vstřelených branek, nižší počet obdržených branek, los pořadatele. Při rovnosti bodů tří a více týmů bude pro dotčené týmy vytvořena minitabulka jejich vzájemných utkání.
+
+## Utkání o umístění
+
+UTKÁNÍ O UMÍSTĚNÍ Výsledky utkání o konečné umístění určují konečné pořadí týmů na turnaji. Tato utkání musí znát vítěze. V případě shodnosti bodů po základní hrací době, rozhodnou o vítězi samostatné nájezdy. Každý tým určí 3 hráče, kteří provedou po jednom nájezdu. Pokud nebude rozhodnuto ani po této sérii, pokračují nájezdy systémem náhlé smrti, po jedné sérii. Při zahájení náhlé smrti se obrací pořadí týmů oproti úvodní sérii. Utkání končí, jakmile po stejném počtu provedených nájezdů získá jeden tým rozhodující náskok. Hráči provádějící nájezd se nesmí opakovat, dokud nájezd neprovedou všichni hráči v týmu.
+
+## Startovné a ceny
+
+STARTOVNÉ Startovné činí 8 000 Kč za tým a zahrnuje: zajištění ledové plochy, časomíru a organizaci utkání, rozhodčí, poháry, medaile a diplomy, občerstvení pro hráče do kabiny, zdravotnickou službu. CENY Každý zúčastněný tým obdrží sadu medailí pro hráče. Týmy na 1., 2. a 3. místě obdrží pohár. Vítěz turnaje obdrží PUTOVNÍ POHÁR.
+
+## Stravování a fair play
+
+STRAVOVÁNÍ Pořadatel nabízí možnost objednání oběda pro hráče a členy realizačních týmů. (polévka, hlavní jídlo, pití) Počet obědů je nutné objednat předem nejpozději do 12. 12. 2026. Kontakt pro objednání obědů: Martin Kakos +420 732 773 346. FAIR PLAY Turnaj je pořádán především pro děti. Jeho hlavním cílem je radost ze hry, získávání zkušeností a podpora sportovního chování. Trenéři, rodiče a ostatní doprovod jsou žádáni, aby respektovali rozhodčí, soupeře i všechny mladé hráče a pomohli vytvořit pozitivní sportovní atmosféru.
+
+## Organizační pravidla
+
+ORGANIZAČNÍ A DISCIPLINÁRNÍ USTANOVENÍ Vedoucí jednotlivých týmů odpovídají za své hráče po celou dobu konání turnaje. Každý tým bude mít dvě sady dresů, světlé a tmavé. Rozhodnutí rozhodčího během utkání je konečné. Případné organizační nebo sporné situace, které nejsou výslovně upraveny těmito propozicemi, řeší hlavní pořadatel turnaje. Hrubé nesportovní chování hráčů, trenérů, členů realizačních týmů nebo doprovodu nebude tolerováno.

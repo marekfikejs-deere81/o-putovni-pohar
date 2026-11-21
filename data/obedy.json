@@ -1,0 +1,52 @@
+[
+  {
+    "start": "10:45",
+    "end": "11:05",
+    "teams": [
+      "CEB",
+      "SLA"
+    ],
+    "anchorBlockId": 5,
+    "offsetMinutes": 10
+  },
+  {
+    "start": "11:10",
+    "end": "11:30",
+    "teams": [
+      "VLA",
+      "VLB"
+    ],
+    "anchorBlockId": 6,
+    "offsetMinutes": 20
+  },
+  {
+    "start": "11:35",
+    "end": "11:55",
+    "teams": [
+      "MBL",
+      "KOB"
+    ],
+    "anchorBlockId": 7,
+    "offsetMinutes": 10
+  },
+  {
+    "start": "12:00",
+    "end": "12:20",
+    "teams": [
+      "LIT",
+      "PLZ"
+    ],
+    "anchorBlockId": 8,
+    "offsetMinutes": 0
+  },
+  {
+    "start": "12:25",
+    "end": "12:45",
+    "teams": [
+      "BEN",
+      "SVE"
+    ],
+    "anchorBlockId": 9,
+    "offsetMinutes": 5
+  }
+]

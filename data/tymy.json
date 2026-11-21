@@ -1,0 +1,142 @@
+[
+  {
+    "id": 0,
+    "code": "VLA",
+    "name": "HC Rytíři Vlašim A",
+    "lines": [
+      "HC Rytíři",
+      "Vlašim A"
+    ],
+    "group": "A",
+    "slot": 1,
+    "color": "#3384ff",
+    "web": "loga/web/VLA.png",
+    "stadium": "loga/stadion/VLA.png"
+  },
+  {
+    "id": 2,
+    "code": "BEN",
+    "name": "HC Lev Benešov",
+    "lines": [
+      "HC Lev",
+      "Benešov"
+    ],
+    "group": "A",
+    "slot": 2,
+    "color": "#ffd300",
+    "web": "loga/web/BEN.png",
+    "stadium": "loga/stadion/BEN.png"
+  },
+  {
+    "id": 3,
+    "code": "CEB",
+    "name": "HC Motor Č. Budějovice",
+    "lines": [
+      "HC Motor",
+      "Č. Budějovice"
+    ],
+    "group": "A",
+    "slot": 3,
+    "color": "#ed2638",
+    "web": "loga/web/CEB.png",
+    "stadium": "loga/stadion/CEB.png"
+  },
+  {
+    "id": 5,
+    "code": "MBL",
+    "name": "BK Mladá Boleslav",
+    "lines": [
+      "BK Mladá",
+      "Boleslav"
+    ],
+    "group": "A",
+    "slot": 4,
+    "color": "#41ca59",
+    "web": "loga/web/MBL.png",
+    "stadium": "loga/stadion/MBL.png"
+  },
+  {
+    "id": 9,
+    "code": "LIT",
+    "name": "HC Verva Litvínov",
+    "lines": [
+      "HC Verva",
+      "Litvínov"
+    ],
+    "group": "A",
+    "slot": 5,
+    "color": "#f4df00",
+    "web": "loga/web/LIT.png",
+    "stadium": "loga/stadion/LIT.png"
+  },
+  {
+    "id": 1,
+    "code": "VLB",
+    "name": "HC Rytíři Vlašim B",
+    "lines": [
+      "HC Rytíři",
+      "Vlašim B"
+    ],
+    "group": "B",
+    "slot": 1,
+    "color": "#3384ff",
+    "web": "loga/web/VLB.png",
+    "stadium": "loga/stadion/VLB.png"
+  },
+  {
+    "id": 6,
+    "code": "SVE",
+    "name": "HC Světlá nad Sázavou",
+    "lines": [
+      "HC Světlá",
+      "nad Sázavou"
+    ],
+    "group": "B",
+    "slot": 2,
+    "color": "#63abff",
+    "web": "loga/web/SVE.png",
+    "stadium": "loga/stadion/SVE.png"
+  },
+  {
+    "id": 7,
+    "code": "SLA",
+    "name": "HC Slavia Praha",
+    "lines": [
+      "HC Slavia",
+      "Praha"
+    ],
+    "group": "B",
+    "slot": 3,
+    "color": "#ed2638",
+    "web": "loga/web/SLA.png",
+    "stadium": "loga/stadion/SLA.png"
+  },
+  {
+    "id": 4,
+    "code": "KOB",
+    "name": "HC Kobra Praha",
+    "lines": [
+      "HC Kobra",
+      "Praha"
+    ],
+    "group": "B",
+    "slot": 4,
+    "color": "#ffd300",
+    "web": "loga/web/KOB.png",
+    "stadium": "loga/stadion/KOB.png"
+  },
+  {
+    "id": 8,
+    "code": "PLZ",
+    "name": "HC Škoda Plzeň",
+    "lines": [
+      "HC Škoda",
+      "Plzeň"
+    ],
+    "group": "B",
+    "slot": 5,
+    "color": "#ffffff",
+    "web": "loga/web/PLZ.png",
+    "stadium": "loga/stadion/PLZ.png"
+  }
+]
