@@ -48,7 +48,7 @@ export function confirmationMail(order, t, lunch) {
     `Turnaj: ${t.name}`,
     `Datum: ${t.dayText}`,
     `Tým: ${order.label}`,
-    lunch ? `Oběd: ${toHHMM(lunch.from)}–${toHHMM(lunch.to)} (restaurace na zimním stadionu)` : null,
+    lunch ? `Oběd: ${toHHMM(lunch.from)}–${toHHMM(lunch.to)} – předběžně (restaurace na zimním stadionu)` : null,
     ``,
     `Hráči: ${order.players} × ${czk(t.prices.player)} = ${czk(order.players * t.prices.player)}`,
     `Realizační tým: ${order.staff} × ${czk(t.prices.staff)} = ${czk(order.staff * t.prices.staff)}`,
@@ -56,6 +56,8 @@ export function confirmationMail(order, t, lunch) {
     `Celková cena: ${czk(totalPrice(order, t.prices))}`,
     ``,
     `Menu: ${t.menu}`,
+    ``,
+    `Přesný časový rozpis zápasů a časová okna obědů pro jednotlivé týmy budou finální v den turnaje. Aktuální časy najdete vždy na www.vlasimskypohar.cz.`,
     ``,
     change
       ? `Změnu provedl pořadatel turnaje.`

@@ -4,7 +4,7 @@ import { ApiError } from './errors.js';
 import { validateOrder, confirmationMail, ORGANIZER_CC } from '../../shared/orders.js';
 
 export const TOURNAMENT_ID = 'vlasim-2026';
-export const ORGANIZER = 'Marek Fikejs, marek.fikejs@gmail.com';
+export const ORGANIZER = 'Martin Kakos, m.kakos9@seznam.cz, +420 732 773 346'; // kontakt pro změny objednávek obědů
 const DAY_TEXT = 'pondělí 28. 12. 2026';
 
 // ---------- tokeny ----------
