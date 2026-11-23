@@ -2,7 +2,7 @@
 // konečné pořadí a poznámky o rozhodnutí pořadatele. Český font (DejaVu Sans, subset). Bez soukromých údajů.
 import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
-import { PROPOZICE } from '../../shared/propozice.js';
+import { fillPropozice } from '../../shared/propozice.js';
 import { toHHMM } from '../../shared/schedule.js';
 import { model } from './results.js';
 import { TOURNAMENT_ID } from './orders.js';
@@ -127,7 +127,7 @@ export async function generateReport(q, fonts, generatedAt = new Date()) {
 
   // 1) Propozice
   L.heading('Propozice turnaje');
-  for (const s of PROPOZICE) {
+  for (const s of fillPropozice(m.tournament.lunch)) {
     L.sub(s.title);
     if (s.items) L.table([{ title: 'Údaj', w: 26 }, { title: '', w: 74 }], s.items, { size: 9.5 });
     for (const p of s.text || []) { L.text(p, { size: 9.5 }); L.space(3); }

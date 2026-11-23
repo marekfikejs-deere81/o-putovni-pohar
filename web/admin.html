@@ -21,6 +21,7 @@
   .narrow{max-width:420px;margin:30px auto}
   h2{margin:0 0 12px;font-size:18px}
   label{display:block;font-weight:600;margin:10px 0 4px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   input,textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:#fff;min-height:44px}
   .btn{display:inline-block;border:0;border-radius:10px;background:var(--blue);color:#fff;font:inherit;font-weight:700;padding:10px 14px;cursor:pointer}
   .btn.block{display:block;width:100%;height:46px;margin-top:14px}
@@ -45,7 +46,27 @@
   .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
   .tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
   .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-  @media (max-width:640px){ .hide-m{display:none} header .who{display:none} header h1{font-size:16px} }
+  .orders-wrap{overflow-x:auto}
+  @media (max-width:640px){
+    .hide-m{display:none} header .who{display:none} header h1{font-size:16px}
+    main{padding:10px} .card{padding:14px 12px}
+    /* Objednávky na mobilu: každý tým jako kartička, nic se neposouvá do strany */
+    .orders-wrap{overflow:visible}
+    table.orders thead{display:none}
+    table.orders,table.orders tbody{display:block}
+    table.orders tr{display:grid;grid-template-columns:repeat(3,auto) 1fr;gap:2px 14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+    table.orders tr[hidden]{display:none}
+    table.orders td{border:0;padding:0}
+    table.orders td:first-child{grid-column:1/-1}
+    table.orders td.num{text-align:left}
+    table.orders td.num::before{content:attr(data-l) " ";color:var(--muted);font-size:12px}
+    table.orders td.st{grid-column:1/4}
+    table.orders td.act{grid-column:4;grid-row:2/4;justify-self:end}
+    table.orders tr.editrow{display:block} table.orders tr.editrow[hidden]{display:none}
+    .row2,.edit{grid-template-columns:1fr}
+    .linkrow{flex-wrap:wrap} .linkrow .name{flex-basis:100%} .linkrow input{flex:1 1 100%;font-size:14px}
+    .totals{gap:6px 14px;font-size:14px}
+  }
 </style>
 </head>
 <body>
@@ -69,7 +90,7 @@ const store = {
 };
 let api = '';
 let auth = store.get();
-let prices = { player: 140, staff: 170 };
+let prices = { player: 140, staff: 150 };
 const rowPrice = (r) => r.players * prices.player + r.staff * prices.staff;
 let flash = null;
 let generated = null; // [{key,label,token}] – jen v paměti, po obnovení stránky zmizí
@@ -170,7 +191,8 @@ function renderReset(token) {
 }
 
 // ---------- admin: obědy ----------
-const teamLink = (token) => `${location.origin}${location.pathname.replace(/admin\.html$/, '')}obedy.html#t=${token}`;
+// Krátký odkaz: na vlastní doméně https://www.vlasimskypohar.cz/obedy-xxxxxx
+const teamLink = (token) => `${location.origin}${location.pathname.replace(/admin\.html$/, '')}obedy-${token}`;
 
 const TABS = [['vysledky', 'Výsledky'], ['poradi', 'Pořadí a los'], ['rozpis', 'Rozpis'], ['obedy', 'Obědy'], ['posta', 'Pošta'], ['tymy', 'Týmy'], ['tipy', 'Tipy'], ['historie', 'Historie']];
 const tabsHtml = () => `<div class="tabs">${TABS.map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -239,20 +261,29 @@ async function renderAdmin() {
     ${tabsHtml()}
     <section class="card"><h2>Objednávky obědů</h2>
       <div class="muted">Cena: hráč ${czk(prices.player)}, realizační tým ${czk(prices.staff)}. Uzávěrka pro týmy 12. 12. 2026 ve 24:00. Ty můžeš měnit kdykoli – každá změna jde do historie a odejde nové potvrzení.</div>
-      <div style="overflow-x:auto"><table>
+      <div class="orders-wrap"><table class="orders">
         <thead><tr><th>Tým</th><th class="num">Hráči</th><th class="num">RT</th><th class="num">Cena</th><th class="hide-m">E-mail</th><th>Stav</th><th></th></tr></thead>
         <tbody>${rows.map((r) => {
           const done = r.players !== null;
           return `<tr data-key="${esc(r.key)}">
             <td><b>${esc(r.label)}</b><div class="muted">${r.link_created ? `odkaz ${r.link_used ? 'použit ' + fmt(r.link_used) : 'vydán ' + fmt(r.link_created)}` : 'bez odkazu'}</div></td>
-            <td class="num">${done ? r.players : '—'}</td><td class="num">${done ? r.staff : '—'}</td>
-            <td class="num">${done ? czk(rowPrice(r)) : '—'}</td>
+            <td class="num" data-l="Hráči">${done ? r.players : '—'}</td><td class="num" data-l="RT">${done ? r.staff : '—'}</td>
+            <td class="num" data-l="Cena">${done ? czk(rowPrice(r)) : '—'}</td>
             <td class="hide-m">${esc(r.email) || ''}</td>
-            <td>${done ? `<span class="pill ok">v${r.version}</span><div class="muted">${fmt(r.updated_at)}</div>` : '<span class="pill no">neobjednáno</span>'}</td>
-            <td><button class="btn small secondary" data-edit="${esc(r.key)}">${done ? 'Upravit' : 'Zadat'}</button></td></tr>
-            <tr hidden data-editrow="${esc(r.key)}"><td colspan="7"></td></tr>`;
+            <td class="st">${done ? `<span class="pill ok">v${r.version}</span><div class="muted">${fmt(r.updated_at)}</div>` : '<span class="pill no">neobjednáno</span>'}</td>
+            <td class="act"><button class="btn small secondary" data-edit="${esc(r.key)}">${done ? 'Upravit' : 'Zadat'}</button></td></tr>
+            <tr hidden class="editrow" data-editrow="${esc(r.key)}"><td colspan="7"></td></tr>`;
         }).join('')}</tbody></table></div>
       <div class="totals"><span>Objednáno ${ordered.length}/9</span><span>Hráči ${sumP}</span><span>RT ${sumS}</span><span>Porcí ${sumP + sumS}</span><span>Celkem ${czk(sumP * prices.player + sumS * prices.staff)}</span></div>
+    </section>
+    <section class="card"><h2>Cena a menu</h2>
+      <form id="lunchset">
+        <div class="row2"><div><label for="ls-player">Cena pro hráče (Kč)</label><input id="ls-player" name="player" inputmode="numeric" value="${esc(prices.player)}" required></div>
+        <div><label for="ls-staff">Cena pro realizační tým (Kč)</label><input id="ls-staff" name="staff" inputmode="numeric" value="${esc(prices.staff)}" required></div></div>
+        <label for="ls-menu">Menu</label><textarea id="ls-menu" name="menu" rows="2" maxlength="300" required>${esc(prices.menu || '')}</textarea>
+        <div class="muted">Změna se hned projeví na webu, v propozicích, ve formuláři týmů, v nových potvrzeních a v souhrnu pro Kakose. Už odeslaná potvrzení se znovu neposílají.</div>
+        <button class="btn" type="submit" style="margin-top:10px">Uložit cenu a menu</button>
+      </form>
     </section>
     <section class="card"><h2>Odkazy pro týmy</h2>
       <div class="muted">Každý tým dostane vlastní odkaz. Vygenerováním nových odkazů přestanou platit staré. Odkazy se zobrazí jen teď – po obnovení stránky už je neuvidíš (lze vygenerovat znovu).</div>
@@ -261,6 +292,15 @@ async function renderAdmin() {
     </section>`;
   wireTabs();
   app.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => openEdit(rows.find((r) => r.key === b.dataset.edit)));
+  document.getElementById('lunchset').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const body = { player: f.get('player'), staff: f.get('staff'), menu: f.get('menu') };
+    if (!confirm(`Uložit: hráč ${body.player} Kč, realizační tým ${body.staff} Kč?`)) return;
+    try { await call('PUT', '/api/admin/lunch-settings', body); flash = { t: 'ok', m: 'Cena a menu uloženy.' }; }
+    catch (err) { if (err.silent) return; flash = { t: 'err', m: err.message }; }
+    renderAdmin();
+  };
   document.getElementById('gen').onclick = async (e) => {
     if (!confirm('Vygenerovat nové odkazy? Dosavadní odkazy týmů přestanou platit.')) return;
     e.target.disabled = true;

@@ -29,10 +29,21 @@ crons = ["0 * * * *"]
 [observability]
 enabled = true
 
+# Limit pokusů o otevření objednávky (krátké kódy): 30 požadavků za minutu na IP.
+[[ratelimits]]
+name = "ORDER_LIMIT"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }
+
 [env.production]
 name = "o-putovni-pohar-api"
 workers_dev = true
 preview_urls = false
+
+[[env.production.ratelimits]]
+name = "ORDER_LIMIT"
+namespace_id = "1002"
+simple = { limit = 30, period = 60 }
 
 [env.production.triggers]
 crons = ["0 * * * *"]

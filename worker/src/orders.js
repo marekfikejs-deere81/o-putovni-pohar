@@ -15,14 +15,23 @@ export async function hashToken(token) {
   return hex(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)));
 }
 
+// Krátký kód do odkazu …/obedy-xxxxxx: 6 znaků bez snadno zaměnitelných (0/o, 1/l/i).
+// 31^6 ≈ 887 milionů kombinací; hádání brzdí limit požadavků na IP adresu ve Workeru.
+export const TOKEN_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+export const TOKEN_LENGTH = 6;
+
 export function newToken() {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  let s = '';
-  for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const out = [];
+  while (out.length < TOKEN_LENGTH) {
+    for (const b of crypto.getRandomValues(new Uint8Array(16))) {
+      if (b < 248 && out.length < TOKEN_LENGTH) out.push(TOKEN_ALPHABET[b % 31]); // 248 = 8 × 31, bez zkreslení
+    }
+  }
+  return out.join('');
 }
 
-export const isTokenShape = (t) => typeof t === 'string' && /^[A-Za-z0-9_-]{40,64}$/.test(t);
+export const normalizeToken = (t) => (typeof t === 'string' ? t.trim().toLowerCase() : '');
+export const isTokenShape = (t) => typeof t === 'string' && /^[a-hjkmnp-z2-9]{6}$/.test(t);
 
 // ---------- transakce ----------
 
@@ -224,11 +233,32 @@ export async function adminGenerateLinks(q, keys, actor, nowIso) {
     const out = [];
     for (const k of chosen) {
       await q(`UPDATE team_access SET revoked_at = $2 WHERE key = $1 AND revoked_at IS NULL`, [k.key, nowIso]);
-      const token = newToken();
+      let token = newToken();
+      while ((await q(`SELECT 1 FROM team_access WHERE token_hash = decode($1, 'hex')`, [await hashToken(token)])).length) token = newToken();
       await q(`INSERT INTO team_access (key, token_hash, created_at) VALUES ($1, decode($2, 'hex'), $3)`, [k.key, await hashToken(token), nowIso]);
       out.push({ key: k.key, label: k.label, token });
     }
     await q(`INSERT INTO audit_log (actor, action, after) VALUES ($1, 'team_access.generate', $2)`, [actor, JSON.stringify(chosen.map((k) => k.key))]);
     return out;
+  });
+}
+
+/** Admin: cena obědu (hráč / realizační tým) a menu. Platí pro web, formulář, potvrzení i souhrn. */
+export async function adminLunchSettings(q, body, actor) {
+  const int = (v) => (typeof v === 'number' || (typeof v === 'string' && /^\d+$/.test(v.trim())) ? Number(v) : NaN);
+  const player = int(body?.player), staff = int(body?.staff);
+  const menu = typeof body?.menu === 'string' ? body.menu.trim().replace(/\s+/g, ' ') : '';
+  const bad = [];
+  if (!Number.isInteger(player) || player < 1 || player > 2000) bad.push('Cena pro hráče musí být celé číslo 1–2000 Kč.');
+  if (!Number.isInteger(staff) || staff < 1 || staff > 2000) bad.push('Cena pro realizační tým musí být celé číslo 1–2000 Kč.');
+  if (menu.length < 3 || menu.length > 300) bad.push('Menu musí mít 3–300 znaků.');
+  if (bad.length) throw new ApiError(422, bad.join(' '));
+  return withTx(q, async () => {
+    const [before] = await q(`SELECT lunch_price_player_czk AS player, lunch_price_staff_czk AS staff, lunch_menu AS menu FROM tournament WHERE id = $1 FOR UPDATE`, [TOURNAMENT_ID]);
+    const after = { player, staff, menu };
+    if (before.player === player && before.staff === staff && before.menu === menu) return after;
+    await q(`UPDATE tournament SET lunch_price_player_czk = $2, lunch_price_staff_czk = $3, lunch_menu = $4, revision = revision + 1 WHERE id = $1`, [TOURNAMENT_ID, player, staff, menu]);
+    await q(`INSERT INTO audit_log (actor, action, before, after) VALUES ($1, 'lunch.settings', $2, $3)`, [actor, JSON.stringify(before), JSON.stringify(after)]);
+    return after;
   });
 }

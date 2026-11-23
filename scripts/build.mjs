@@ -19,7 +19,11 @@ writeFileSync(`${out}/config.json`, JSON.stringify(config, null, 2));
 // GitHub Pages nemá Jekyll zpracovávat soubory.
 writeFileSync(`${out}/.nojekyll`, '');
 
-for (const required of ['index.html', 'stadion.html', 'obedy.html', 'admin.html', 'soukromi.html']) {
+// Krátké odkazy týmů …/obedy-xxxxxx: GitHub Pages pro neznámou adresu vrátí 404.html = formulář obědů,
+// který si kód přečte z adresy. Jiné neznámé adresy ukážou „Stránka nenalezena“.
+writeFileSync(`${out}/404.html`, readFileSync(`${out}/obedy.html`, 'utf8').replace('<html lang="cs">', '<html lang="cs" data-notfound>'));
+
+for (const required of ['index.html', 'stadion.html', 'obedy.html', 'admin.html', 'soukromi.html', '404.html']) {
   if (!existsSync(`${out}/${required}`)) throw new Error(`Chybí ${required} v buildu`);
 }
 const size = readFileSync(`${out}/stadion.html`).length;

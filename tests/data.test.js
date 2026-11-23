@@ -117,6 +117,14 @@ test('Obědy: 5 oken, 10 týmů, časy z kotev, žádná kolize s vlastním záp
   assert.equal(toHHMM(lunchWindows(lunches, shifted)[0].from), '10:55');
 });
 
-test('Cena obědu: 12 hráčů × 140 + 3 RT × 170 = 2 190 Kč', () => {
-  assert.equal(12 * 140 + 3 * 170, 2190);
+test('Cena obědu: 12 hráčů × 140 + 3 RT × 150 = 2 130 Kč', () => {
+  assert.equal(12 * 140 + 3 * 150, 2130);
+});
+
+test('Propozice: menu a ceny se doplní z nastavení', async () => {
+  const { fillPropozice } = await import('../shared/propozice.js');
+  const P = fillPropozice({ menu: 'Vývar, řízek.', prices: { player: 140, staff: 150 } });
+  const t = P.find((x) => x.title === 'Stravování').text.join(' ');
+  assert.ok(t.includes('Vývar, řízek.') && t.includes('hráč 140\u00a0Kč') && t.includes('týmu 150\u00a0Kč'), t);
+  assert.ok(!/\{(menu|cenaHrac|cenaRT)\}/.test(JSON.stringify(P)));
 });

@@ -66,8 +66,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const czk = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Kč`;
 const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
-const token = new URLSearchParams(location.hash.slice(1)).get('t');
-window.addEventListener('hashchange', () => location.reload());
+// Odkaz týmu má tvar …/obedy-xxxxxx (6 znaků). GitHub Pages ho obslouží přes 404.html (kopie této stránky).
+const hit = location.pathname.match(/\/obedy-([a-z0-9]{6})\/?$/i);
+const token = hit ? hit[1].toLowerCase() : null;
+const notFoundPage = document.documentElement.hasAttribute('data-notfound');
+const home = location.hostname.endsWith('github.io') ? `/${location.pathname.split('/')[1]}/` : '/';
 let api = '';
 let view = null;
 let draft = { players: 0, staff: 0, email: '' };
@@ -205,11 +208,15 @@ async function load() {
 try {
   const c = await fetch('config.json', { cache: 'no-store' }).then((r) => r.json());
   api = c.apiBase || '';
+  if (!token && notFoundPage) {
+    app.innerHTML = `<div class="center"><h1>Stránka nenalezena</h1><p>Adresa neexistuje. Pokračuj na <a href="${home}">web turnaje</a>.</p></div>`;
+    throw null;
+  }
   if (!token) throw Object.assign(new Error('Chybí odkaz týmu.'), { status: 404 });
   await load();
   render('form');
 } catch (err) {
-  render('invalid', err.status === 404 ? 'Tento odkaz pro objednávku neplatí.' : err.message);
+  if (err === null) { /* stránka nenalezena už vykreslená */ } else render('invalid', err.status === 404 ? 'Tento odkaz pro objednávku neplatí. Zkontroluj, že je opsaný celý, nebo požádej pořadatele.' : err.message);
 }
 </script>
 </body>

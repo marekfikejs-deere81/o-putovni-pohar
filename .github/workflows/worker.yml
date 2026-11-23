@@ -102,5 +102,5 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/public"); echo "public: $code"; test "$code" = 200
           code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/admin/me"); echo "admin bez přihlášení: $code"; test "$code" = 401
           code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/api/auth/login" -H 'Content-Type: application/json' -d '{"email":"nikdo@example.com","password":"spatne-heslo-1"}'); echo "login se špatným heslem: $code"; test "$code" = 401
-          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/order" -H 'X-Order-Token: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'); echo "neplatný odkaz týmu: $code"; test "$code" = 404
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/order" -H 'X-Order-Token: aaaaaa'); echo "neplatný odkaz týmu: $code"; test "$code" = 404
           echo "API_URL=$URL" >> "$GITHUB_STEP_SUMMARY"

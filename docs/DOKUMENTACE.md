@@ -108,7 +108,7 @@ Podporuj i `?ukazka=zapas` (první dvojzápas), `?ukazka=led` (první úprava, r
 
 ### 7. Obědy a e-mailová komunikace
 
-Menu tvoří hovězí vývar, špagety s boloňskou omáčkou a šťáva. Jedna porce stojí 170 Kč. Formulář zobrazuje znak a tým, počty pro **Hráč** a **Realizační tým**, součet porcí a cenu, poznámku do 100 znaků pro alergie/diety a povinný potvrzovací e-mail. Počty jsou nezáporná celá čísla. Společná objednávka pro VLA + VLB platí pro obě družstva dohromady. Ostatních osm týmů má po jedné objednávce. Zůstává tedy deset sportovních týmů a devět objednatelů.
+Menu tvoří hovězí vývar, špagety s boloňskou omáčkou a šťáva. Cena: hráč 140 Kč, člen realizačního týmu 150 Kč; cenu i menu mění pořadatel v Adminu (Obědy → Cena a menu). Formulář zobrazuje znak a tým, počty pro **Hráč** a **Realizační tým**, součet porcí a cenu, poznámku do 100 znaků pro alergie/diety a povinný potvrzovací e-mail. Počty jsou nezáporná celá čísla. Společná objednávka pro VLA + VLB platí pro obě družstva dohromady. Ostatních osm týmů má po jedné objednávce. Zůstává tedy deset sportovních týmů a devět objednatelů.
 
 | Oběd | Týmy | Konec předchozí hry | Další začátek | Odstup po obědě |
 |---|---|---|---|---|

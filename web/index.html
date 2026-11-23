@@ -11,7 +11,9 @@
 *{box-sizing:border-box}
 body{margin:0;background:#edf3f7;color:#152e48;font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:530px;margin:auto;background:#fff;min-height:100vh;padding-bottom:calc(70px + env(safe-area-inset-bottom))}
-header{background:#112f50;color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px;border-bottom:5px solid #52afe3}
+header{position:relative;background:#112f50;color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px;border-bottom:5px solid #52afe3}
+.gear{position:absolute;top:8px;right:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#9fc9ea;border-radius:50%}
+.gear:hover,.gear:focus-visible{color:#fff;background:rgba(255,255,255,.12)}
 header img{width:57px;height:57px;object-fit:contain;border-radius:8px;background:#fff;padding:2px}
 header small{display:block;color:#cae8ff;font-size:12px;letter-spacing:.03em}
 header h1{font-size:24px;line-height:1.12;margin:3px 0}
@@ -24,8 +26,8 @@ td,th{padding:5px 2px;text-align:center;border-bottom:1px solid #dae3ea}
 th{font-size:12px;color:#567389;background:#eef5fa;font-weight:600}
 button{font:inherit;color:#143854;border:1px solid #c5d6e2;background:#fff;border-radius:9px;min-height:44px;padding:7px 12px;cursor:pointer}
 button.on{background:#114b83;color:#fff;border-color:#114b83}
-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);background:#fbfdff;border-top:1px solid #ccdce7;width:min(100%,530px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px 2px max(4px,env(safe-area-inset-bottom));z-index:5}
-nav button{border:0;font-size:clamp(11px,3.1vw,13px);padding:6px 1px;line-height:1.15;min-width:0}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);background:#fbfdff;border-top:1px solid #ccdce7;width:min(100%,530px);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:4px 2px max(4px,env(safe-area-inset-bottom));z-index:5}
+nav button{border:0;font-size:clamp(10.5px,2.9vw,13px);padding:6px 1px;line-height:1.15;min-width:0;overflow-wrap:anywhere}
 .note{background:#edf5fb;padding:12px;border-radius:8px;margin:8px 0 14px}
 .warn{background:#fff7e0;border:1px solid #f0d58a}
 .toggle{display:flex;gap:6px;margin:6px 0 4px}
@@ -60,6 +62,10 @@ em.hraje{display:block;font:700 10px system-ui;color:#07543c;font-style:normal;l
 .slotTime.current{background:#0c3d66;border-left:5px solid #40c38b}
 .event{background:#edf5fa;color:#33536b;border-radius:6px;padding:8px 10px;margin:10px 0;font-variant-numeric:tabular-nums}
 .event.current{background:#dcf4e9;color:#07543c;font-weight:600}
+.now-block{scroll-margin-top:12px;margin:12px -8px;padding:2px 8px 8px;border-radius:10px;background:#eefaf4;box-shadow:0 0 0 2px #40c38b}
+.now-block .slotTime{margin-top:8px}
+.nyni{float:right;font-style:normal;font-size:11px;letter-spacing:.06em;background:#40c38b;color:#06311f;border-radius:5px;padding:2px 6px;margin-top:1px}
+.event .nyni{margin-left:8px}
 .fixture{border-left:3px solid #499aca;margin:6px 0;padding:6px 8px;cursor:pointer}
 .fixture.live{border-left-color:#087858;background:#f1faf5}
 .fixture .teams{display:flex;flex-direction:column;gap:3px;margin-top:3px}
@@ -93,6 +99,11 @@ dialog h3{margin-top:0}
 .status.off{background:#fdecea;color:#9a2a1c}
 footer{padding:18px;text-align:center;font-size:13px;color:#557184;border-top:1px solid #e3ebf1}
 footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;min-height:auto;text-decoration:underline;font-size:13px}
+
+.export{margin:18px 0 4px;padding-top:14px;border-top:1px solid #e3ebf1;text-align:center}
+.export small{display:block}
+.pdf.off{background:#e6edf2;color:#7890a2;cursor:not-allowed}
+.maplink{display:inline-block;margin-top:6px;font-weight:600;color:#124f83}
 .pdf{display:block;text-align:center;background:#114b83;color:#fff;border-radius:9px;padding:12px;font-weight:700;margin:4px 0 12px;text-decoration:none}
 @media(max-width:379px){.matrix .rowteam img{display:none}}
 </style>
@@ -102,27 +113,26 @@ footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;mi
   <header>
     <img src="loga/web/VLA.png" alt="HC Rytíři Vlašim">
     <div><small>HC RYTÍŘI VLAŠIM · 2. TŘÍDY</small><h1>O putovní pohár</h1><div>Vánoční turnaj · 28.&nbsp;12.&nbsp;2026</div></div>
+    <a class="gear" href="admin.html" aria-label="Pořadatel – přihlášení" title="Pořadatel"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.3 7.3 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.3 7.3 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.5-1a7.3 7.3 0 0 0 1.7 1l.4 2.6a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.4l.4-2.7a7.3 7.3 0 0 0 1.7-1l2.5 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></a>
   </header>
   <div class="status" id="status" role="status"><span>Načítání…</span><span></span></div>
   <section id="panel"><p>Načítání turnaje…</p></section>
   <footer>
-    <button data-page="rodice">Pro rodiče</button> ·
-    <a href="soukromi.html">Ochrana údajů</a> ·
-    <a href="admin.html">Pořadatel</a>
+    <a href="soukromi.html">Ochrana údajů</a>
   </footer>
   <nav id="nav"></nav>
 </main>
 <dialog id="dlg"><article></article><form method="dialog"><button>Zavřít</button></form></dialog>
 
 <script type="module">
-import { PROPOZICE } from './shared/propozice.js';
+import { fillPropozice } from './shared/propozice.js';
 import { toHHMM } from './shared/schedule.js';
 
 const TZ = 'Europe/Prague';
 const DAY = '2026-12-28';
 const POLL_MS = 5000;
 const RINK = { A: 'pod časomírou', B: 'pod restaurací' };
-const TABS = [['prehled', 'Přehled'], ['program', 'Program'], ['umisteni', 'Umístění'], ['obedy', 'Obědy'], ['propozice', 'Propozice']];
+const TABS = [['prehled', 'Přehled'], ['program', 'Program'], ['umisteni', 'Umístění'], ['rodice', 'Pro rodiče'], ['obedy', 'Obědy'], ['propozice', 'Propozice']];
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -238,15 +248,17 @@ function pagePrehled() {
   const started = M.groups.A.started || M.groups.B.started;
   const manual = M.groups.A.manual || M.groups.B.manual;
   const lots = [...M.groups.A.pendingLots, ...M.groups.B.pendingLots];
-  return `${M.reportReady ? `<a class="pdf" href="${api}/api/report.pdf">Stáhnout zápis turnaje (PDF)</a>` : ''}
-    <small>${done ? 'SKUPINOVÉ ZÁPASY DOHRÁNY' : started ? 'PRŮBĚŽNÉ VÝSLEDKY' : 'BEZ ZAPSANÝCH VÝSLEDKŮ'}</small>
+  return `<small>${done ? 'SKUPINOVÉ ZÁPASY DOHRÁNY' : started ? 'PRŮBĚŽNÉ VÝSLEDKY' : 'BEZ ZAPSANÝCH VÝSLEDKŮ'}</small>
     <h2>Výsledky skupin</h2>${banner()}
     ${manual ? '<p class="note">Pořadí skupin určil pořadatel.</p>' : ''}
     ${lots.length ? '<p class="note warn">O části pořadí rozhodne los pořadatele.</p>' : ''}
     <div class="toggle"><button class="${view === 'krizova' ? 'on' : ''}" data-view="krizova" aria-pressed="${view === 'krizova'}">Křížová tabulka</button>
     <button class="${view === 'poradi' ? 'on' : ''}" data-view="poradi" aria-pressed="${view === 'poradi'}">Průběžné pořadí</button></div>
     ${['A', 'B'].map((g) => `<div class="groupHead"><h3>Skupina ${g}</h3><small>Plocha ${g} ${RINK[g]}</small></div>${view === 'krizova' ? matrix(g) : standings(g)}`).join('')}
-    <p><small>Odehráno = počet dohraných zápasů z celkového počtu ve skupině. Body a skóre zahrnují každou potvrzenou třetinu.</small></p>`;
+    <p><small>Odehráno = počet dohraných zápasů z celkového počtu ve skupině. Body a skóre zahrnují každou potvrzenou třetinu.</small></p>
+    <div class="export">${M.reportReady
+      ? `<a class="pdf" href="${api}/api/report.pdf">Stáhnout výsledky turnaje (PDF)</a><small>Kompletní zápis: propozice, všechna utkání, tabulky a konečné pořadí.</small>`
+      : `<span class="pdf off" aria-disabled="true">Výsledky turnaje (PDF)</span><small>Export bude dostupný po odehrání posledního zápasu – utkání o 1. místo.</small>`}</div>`;
 }
 
 // ---------- Program ----------
@@ -268,8 +280,10 @@ function pageProgram() {
   let s = `<h2>Program turnaje</h2>${banner()}<p class="note"><b>Plocha A</b> pod časomírou · <b>Plocha B</b> pod restaurací</p>`;
   for (const b of M.blocks) {
     const c = b === cur;
-    if (b.games.length) s += `<h3 class="slotTime${c ? ' current' : ''}"${c ? ' aria-current="time"' : ''}>${toHHMM(b.from)}–${toHHMM(b.to)}${c ? ' · nyní' : ''}</h3>${b.games.map(fixture).join('')}`;
-    else s += `<p class="event${c ? ' current' : ''}"${c ? ' aria-current="time"' : ''}>${toHHMM(b.from)}–${toHHMM(b.to)} · ${esc(b.title)}${c ? ' · nyní' : ''}</p>`;
+    const inner = b.games.length
+      ? `<h3 class="slotTime${c ? ' current' : ''}">${toHHMM(b.from)}–${toHHMM(b.to)}${c ? '<em class="nyni">PRÁVĚ TEĎ</em>' : ''}</h3>${b.games.map(fixture).join('')}`
+      : `<p class="event${c ? ' current' : ''}">${toHHMM(b.from)}–${toHHMM(b.to)} · ${esc(b.title)}${c ? '<em class="nyni">PRÁVĚ TEĎ</em>' : ''}</p>`;
+    s += c ? `<div class="block now-block" id="nyni" aria-current="time">${inner}</div>` : inner;
   }
   return s;
 }
@@ -316,7 +330,7 @@ function pageObedy() {
 
 // ---------- Propozice a Pro rodiče ----------
 function pagePropozice() {
-  return `<h2>Propozice</h2>${PROPOZICE.map((s) => `<details><summary>${esc(s.title)}</summary>
+  return `<h2>Propozice</h2>${fillPropozice(M.tournament.lunch).map((s) => `<details><summary>${esc(s.title)}</summary>
     ${s.items ? `<dl>${s.items.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
     ${(s.text || []).map((p) => `<p>${esc(p)}</p>`).join('')}
     ${s.list ? `<ul>${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
@@ -325,7 +339,7 @@ function pagePropozice() {
 function pageRodice() {
   const tips = M.tips || [];
   return `<h2>Pro rodiče</h2><h3>Restaurace a tipy v okolí</h3>
-    ${tips.length ? tips.map((t) => `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}${t.url && /^https:\/\//.test(t.url) ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">Web / mapa</a>` : ''}</article>`).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
+    ${tips.length ? tips.map((t) => { const map = t.url && /^https:\/\//.test(t.url) ? t.url : t.address ? `https://mapy.cz/zakladni?q=${encodeURIComponent(t.address)}` : ''; return `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}${map ? `<a class="maplink" href="${esc(map)}" target="_blank" rel="noopener">Otevřít v mapách</a>` : ''}</article>`; }).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
     <h3>Kontakt</h3><p>Pořadatel turnaje: Tomáš Vondráček, +420 734 362 033<br>Stravování: Martin Kakos, +420 732 773 346</p>`;
 }
 
@@ -344,7 +358,12 @@ function render() {
 }
 document.addEventListener('click', (e) => {
   const p = e.target.closest('[data-page]');
-  if (p) { page = p.dataset.page; history.replaceState(null, '', `${location.search}#${page}`); render(); window.scrollTo(0, 0); return; }
+  if (p) {
+    page = p.dataset.page; history.replaceState(null, '', `${location.search}#${page}`); render();
+    const now = page === 'program' && document.getElementById('nyni');
+    if (now) now.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
+    return;
+  }
   const v = e.target.closest('[data-view]');
   if (v) { view = v.dataset.view; render(); }
 });
@@ -362,7 +381,12 @@ function setStatus() {
 async function load() {
   try {
     const res = await fetch(`${api}/api/public`, { headers: etag ? { 'If-None-Match': etag } : {}, cache: 'no-store' });
-    if (res.status === 200) { M = await res.json(); etag = res.headers.get('ETag'); if (!$('dlg').open) render(); }
+    if (res.status === 200) {
+      const first = !M;
+      M = await res.json(); etag = res.headers.get('ETag');
+      if (!$('dlg').open) render();
+      if (first && page === 'program') document.getElementById('nyni')?.scrollIntoView({ block: 'start' });
+    }
     else if (res.status !== 304) throw new Error(String(res.status));
     lastOk = new Date(); failing = false;
   } catch {

@@ -5,7 +5,7 @@ import { buildPublicModel } from '../../shared/public-model.js';
 import { loadPublicRaw } from './queries.js';
 import { ApiError } from './errors.js';
 import {
-  hashToken, isTokenShape, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
+  hashToken, isTokenShape, normalizeToken, adminLunchSettings, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
 } from './orders.js';
 import { startOAuth, finishOAuth, gmailSend } from './gmail.js';
 import { savePeriod, deletePeriod, setShootout, setLots, clearLots, setManualOrder, shiftSchedule, updateTeam, addTip, deleteTip, auditLog } from './results.js';
@@ -83,8 +83,17 @@ async function readJson(request) {
   }
 }
 
-async function orderTokenHash(request) {
-  const token = request.headers.get('X-Order-Token');
+/** Brzda proti hádání kódů objednávek: limit požadavků na IP (Workers Rate Limiting). */
+async function orderRateLimit(request, env) {
+  if (!env.ORDER_LIMIT) return;
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const { success } = await env.ORDER_LIMIT.limit({ key: ip });
+  if (!success) throw new ApiError(429, 'Příliš mnoho pokusů. Zkus to prosím za minutu znovu.');
+}
+
+async function orderTokenHash(request, env) {
+  await orderRateLimit(request, env);
+  const token = normalizeToken(request.headers.get('X-Order-Token'));
   if (!isTokenShape(token)) throw new ApiError(404, 'Odkaz pro objednávku neplatí. Požádej pořadatele o nový.');
   return hashToken(token);
 }
@@ -192,12 +201,12 @@ export default {
       }
       // --- objednávka týmu (token v hlavičce, ne v URL) ---
       if (url.pathname === '/api/order' && request.method === 'GET') {
-        const h = await orderTokenHash(request);
+        const h = await orderTokenHash(request, env);
         const view = await withClient(env, ctx, (q) => teamOrderView(q, h, new Date().toISOString()));
         return json(request, env, 200, view, { 'Cache-Control': 'no-store' });
       }
       if (url.pathname === '/api/order' && request.method === 'POST') {
-        const h = await orderTokenHash(request);
+        const h = await orderTokenHash(request, env);
         const body = await readJson(request);
         const idem = request.headers.get('Idempotency-Key');
         const res = await withClient(env, ctx, (q) => submitTeamOrder(q, h, body, idem, new Date().toISOString()));
@@ -229,7 +238,7 @@ export default {
       if (url.pathname === '/api/admin/orders' && request.method === 'GET') {
         await requireAdmin(request, env);
         const { rows, prices } = await withClient(env, ctx, async (q) => {
-          const [p] = await q(`SELECT lunch_price_player_czk AS player, lunch_price_staff_czk AS staff FROM tournament LIMIT 1`);
+          const [p] = await q(`SELECT lunch_price_player_czk AS player, lunch_price_staff_czk AS staff, lunch_menu AS menu FROM tournament LIMIT 1`);
           return { rows: await adminListOrders(q), prices: p };
         });
         return json(request, env, 200, { orders: rows, prices }, { 'Cache-Control': 'no-store' });
@@ -240,6 +249,12 @@ export default {
         const body = await readJson(request);
         const res = await withClient(env, ctx, (q) => adminSaveOrder(q, m[1], body, `admin:${admin.email}`, new Date().toISOString()));
         ctx.waitUntil(runMail(env, ctx));
+        return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/api/admin/lunch-settings' && request.method === 'PUT') {
+        const admin = await requireAdmin(request, env);
+        const body = await readJson(request);
+        const res = await withClient(env, ctx, (q) => adminLunchSettings(q, body, `admin:${admin.email}`));
         return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
       }
       if (url.pathname === '/api/admin/order-links' && request.method === 'POST') {

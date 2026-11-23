@@ -76,7 +76,7 @@ test('Zprávy zaseknuté ve stavu sending přejdou po 10 min do unknown (žádn�
   assert.equal((await status(q))[0].status, 'unknown');
 });
 
-test('Souhrn: všech 9 řádků vč. NEOBJEDNÁNO a výslovné nuly, součty a cena 140/170', async () => {
+test('Souhrn: všech 9 řádků vč. NEOBJEDNÁNO a výslovné nuly, součty a cena 140/150', async () => {
   const { q, tok } = await setup();
   await submitTeamOrder(q, tok.CEB, ok, 'k-ceb-001', '2026-12-01T10:00:00Z');
   await adminSaveOrder(q, 'SLA', { players: 0, staff: 0, email: 'sla@example.cz', version: null }, 'admin:m', '2026-12-01T10:00:00Z');
@@ -84,10 +84,10 @@ test('Souhrn: všech 9 řádků vč. NEOBJEDNÁNO a výslovné nuly, součty a c
   const lines = s.body.split('\n').filter((l) => l.startsWith('• '));
   assert.equal(lines.length, 9);
   assert.ok(lines[0].startsWith('• HC Rytíři Vlašim A + B: NEOBJEDNÁNO'));
-  assert.ok(s.body.includes(`hráči 12, realizační tým 3, celkem 15 porcí (2${NB}190${NB}Kč)`));
+  assert.ok(s.body.includes(`hráči 12, realizační tým 3, celkem 15 porcí (2${NB}130${NB}Kč)`));
   assert.ok(lines.some((l) => /: hráči 0, realizační tým 0, celkem 0 porcí/.test(l)));
   assert.ok(s.body.includes('Objednalo: 2 z 9'));
-  assert.ok(s.body.includes(`CELKOVÁ CENA: 2${NB}190${NB}Kč`));
+  assert.ok(s.body.includes(`CELKOVÁ CENA: 2${NB}130${NB}Kč`));
 });
 
 test('Souhrn se zařadí až v čase a jen jednou (i po výpadku)', async () => {

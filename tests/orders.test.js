@@ -5,7 +5,7 @@ import { migrate, seed, TOURNAMENT_ID } from '../db/apply.mjs';
 import { validateOrder, confirmationMail, czk, totalPrice } from '../shared/orders.js';
 import {
   hashToken, newToken, isTokenShape, teamOrderView, submitTeamOrder,
-  adminSaveOrder, adminGenerateLinks, adminListOrders,
+  adminSaveOrder, adminGenerateLinks, adminListOrders, adminLunchSettings, normalizeToken,
 } from '../worker/src/orders.js';
 import { loadPublicRaw } from '../worker/src/queries.js';
 import { buildPublicModel } from '../shared/public-model.js';
@@ -40,15 +40,15 @@ test('Validace: počty, e-mail; poznámka se ignoruje', () => {
   assert.equal(validateOrder({ ...ok, players: '0', staff: '0' }).value.players, 0);
 });
 
-test('Cena a e-mail: 12 × 140 + 3 × 170 = 2 190 Kč, oběd, bez poznámky', () => {
-  assert.equal(czk(2190), `2${NB}190${NB}Kč`);
-  assert.equal(totalPrice({ players: 12, staff: 3 }, { player: 140, staff: 170 }), 2190);
+test('Cena a e-mail: 12 × 140 + 3 × 150 = 2 130 Kč, oběd, bez poznámky', () => {
+  assert.equal(czk(2130), `2${NB}130${NB}Kč`);
+  assert.equal(totalPrice({ players: 12, staff: 3 }, { player: 140, staff: 150 }), 2130);
   const m = confirmationMail({ ...ok, note: 'nemá se objevit', label: 'HC Lev Benešov', version: 1 },
-    { name: 'Vánoční turnaj', dayText: 'pondělí 28. 12. 2026', prices: { player: 140, staff: 170 }, menu: 'Vývar, špagety', organizer: 'Marek' },
+    { name: 'Vánoční turnaj', dayText: 'pondělí 28. 12. 2026', prices: { player: 140, staff: 150 }, menu: 'Vývar, špagety', organizer: 'Marek' },
     { from: 745, to: 765 });
   assert.match(m.subject, /^Objednávka obědů – HC Lev Benešov/);
-  for (const s of ['Celkem porcí: 15', `12 × 140${NB}Kč = 1${NB}680${NB}Kč`, `3 × 170${NB}Kč = 510${NB}Kč`,
-    `Celková cena: 2${NB}190${NB}Kč`, '12:25–12:45', 'pondělí 28. 12. 2026', 'závazná']) assert.ok(m.body.includes(s), s);
+  for (const s of ['Celkem porcí: 15', `12 × 140${NB}Kč = 1${NB}680${NB}Kč`, `3 × 150${NB}Kč = 450${NB}Kč`,
+    `Celková cena: 2${NB}130${NB}Kč`, '12:25–12:45', 'pondělí 28. 12. 2026', 'závazná']) assert.ok(m.body.includes(s), s);
   assert.ok(!/Poznámka|nemá se objevit/.test(m.body));
 });
 
@@ -64,7 +64,7 @@ test('Tokeny: 9 odkazů, v DB jen otisk, nový odkaz zneplatní starý', async (
   await assert.rejects(teamOrderView(q, await hashToken(old.token), BEFORE), (e) => e.status === 404);
   const v = await teamOrderView(q, await hashToken(fresh.token), BEFORE);
   assert.equal(v.key, 'BEN');
-  assert.equal(newToken().length, 43);
+  assert.equal(newToken().length, 6);
 });
 
 test('Tým: pohled bez cizích dat, Vlašim A+B společně, oběd 11:10', async () => {
@@ -75,7 +75,7 @@ test('Tým: pohled bez cizích dat, Vlašim A+B společně, oběd 11:10', async 
   assert.deepEqual(v.lunch, [{ from: 670, to: 690 }]);
   assert.equal(v.order, null);
   assert.equal(v.closed, false);
-  await assert.rejects(teamOrderView(q, await hashToken('x'.repeat(43)), BEFORE), (e) => e.status === 404);
+  await assert.rejects(teamOrderView(q, await hashToken('zzzzzz'), BEFORE), (e) => e.status === 404);
 });
 
 test('Tým odešle jednou: dvojklik = jedna objednávka, druhé odeslání odmítnuto, fronta e-mailu', async () => {
@@ -141,4 +141,30 @@ test('Veřejný model: jen počty, neobjednáno ≠ výslovná nula, žádné e-
   assert.equal(by.VLS.teams.length, 2);
   const text = JSON.stringify(m);
   assert.ok(!text.includes('trener@example.cz'));
+});
+
+test('Krátké kódy: 6 znaků bez zaměnitelných, velká písmena se převedou', () => {
+  const many = Array.from({ length: 2000 }, newToken);
+  assert.ok(many.every((t) => /^[abcdefghjkmnpqrstuvwxyz23456789]{6}$/.test(t)));
+  assert.ok(new Set(many).size > 1990);
+  assert.ok(isTokenShape(normalizeToken(' AB2CDE ')));
+  for (const bad of ['abc', 'abcdefg', 'abcde0', 'abcdel', 'abcdei', 'abcdeo', '', null]) assert.ok(!isTokenShape(normalizeToken(bad)), String(bad));
+});
+
+test('Admin: cena a menu – validace, uložení do modelu, audit a revize', async () => {
+  const { q } = await setup();
+  const rev = async () => (await q(`SELECT revision::int r FROM tournament`))[0].r;
+  const r0 = await rev();
+  await assert.rejects(adminLunchSettings(q, { player: 0, staff: 150, menu: 'Polévka' }, 'admin:m'), (e) => e.status === 422);
+  await assert.rejects(adminLunchSettings(q, { player: 140, staff: '15a', menu: 'Polévka' }, 'admin:m'), (e) => e.status === 422);
+  await assert.rejects(adminLunchSettings(q, { player: 140, staff: 150, menu: 'x' }, 'admin:m'), (e) => e.status === 422);
+  await adminLunchSettings(q, { player: '145', staff: 155, menu: '  Gulášová   polévka, řízek  ' }, 'admin:m');
+  const m = buildPublicModel(await loadPublicRaw(q, TOURNAMENT_ID));
+  assert.deepEqual(m.tournament.lunch.prices, { player: 145, staff: 155 });
+  assert.equal(m.tournament.lunch.menu, 'Gulášová polévka, řízek');
+  assert.equal(await rev(), r0 + 1);
+  await adminLunchSettings(q, { player: 145, staff: 155, menu: 'Gulášová polévka, řízek' }, 'admin:m'); // beze změny
+  assert.equal(await rev(), r0 + 1);
+  const log = await q(`SELECT action FROM audit_log WHERE action = 'lunch.settings'`);
+  assert.equal(log.length, 1);
 });

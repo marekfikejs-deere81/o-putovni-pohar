@@ -1,4 +1,5 @@
 // Oficiální propozice turnaje ve strukturované podobě (web i PDF zápis).
+// Menu a ceny obědu se doplňují z nastavení v Adminu (fillPropozice).
 // Text vychází z Puvodni-propozice.pdf / docs/Propozice-obsah.md; stravování upraveno podle rozhodnutí 23. 11. 2026.
 export const PROPOZICE = [
   {
@@ -61,8 +62,8 @@ export const PROPOZICE = [
   {
     title: 'Stravování',
     text: [
-      'Pořadatel nabízí oběd pro hráče a členy realizačních týmů: hovězí vývar, špagety s boloňskou omáčkou a šťáva.',
-      'Cena: hráč 140 Kč, člen realizačního týmu 170 Kč. Objednávky do 12. 12. 2026 včetně přes odkaz, který každý tým dostal od pořadatele. Kontakt ke stravování: Martin Kakos, +420 732 773 346.',
+      'Pořadatel nabízí oběd pro hráče a členy realizačních týmů: {menu}.',
+      'Cena: hráč {cenaHrac}, člen realizačního týmu {cenaRT}. Objednávky do 12. 12. 2026 včetně přes odkaz, který každý tým dostal od pořadatele. Kontakt ke stravování: Martin Kakos, +420 732 773 346.',
     ],
   },
   {
@@ -73,3 +74,19 @@ export const PROPOZICE = [
     ],
   },
 ];
+
+const czk = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0')}\u00a0Kč`;
+
+/** Propozice s aktuálním menu a cenami z modelu turnaje (lunch = M.tournament.lunch). */
+export function fillPropozice(lunch) {
+  const menu = String(lunch?.menu || '').trim().replace(/\.$/, '');
+  const map = { '{menu}': menu, '{cenaHrac}': czk(lunch?.prices?.player ?? 0), '{cenaRT}': czk(lunch?.prices?.staff ?? 0) };
+  const fill = (t) => t.replace(/\{menu\}|\{cenaHrac\}|\{cenaRT\}/g, (k) => map[k]);
+  return PROPOZICE.map((s) => ({
+    ...s,
+    items: s.items?.map(([k, v]) => [k, fill(v)]),
+    text: s.text?.map(fill),
+    list: s.list?.map(fill),
+    after: s.after?.map(fill),
+  }));
+}

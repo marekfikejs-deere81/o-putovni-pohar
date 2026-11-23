@@ -236,11 +236,12 @@ export async function renderTips(app, ctx, head) {
   app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   app.innerHTML = `${ctx.head()}<section class="card"><h2>Tipy pro rodiče</h2>
-    ${M.tips.length ? M.tips.map((t) => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(t.title)}</b> <span class="muted">${esc(t.address)}</span><div>${esc(t.body)}</div>
+    ${M.tips.length ? M.tips.map((t) => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(t.title)}</b> <span class="muted">${esc(t.address)}</span>${t.url ? `<div><a href="${esc(t.url)}" target="_blank" rel="noopener">Odkaz na mapy</a></div>` : t.address ? '<div class="muted">mapa podle adresy</div>' : ''}
       <button class="btn small secondary" data-del="${t.id}" style="margin-top:4px">Odebrat</button></div>`).join('') : '<p class="muted">Zatím žádné tipy.</p>'}
     <form id="tf" style="margin-top:12px"><label>Název (např. restaurace)</label><input name="title" maxlength="90" required>
-      <label>Adresa</label><input name="address" maxlength="150"><label>Doporučení / poznámka</label><textarea name="body" maxlength="550" rows="3"></textarea>
-      <label>Odkaz (web nebo mapa, https://)</label><input name="url" type="url" placeholder="https://">
+      <label>Adresa</label><input name="address" maxlength="150">
+      <label>Odkaz na mapy (Mapy.cz nebo Google Maps)</label><input name="url" type="url" placeholder="https://mapy.cz/…">
+      <div class="muted">V mapách klepni na Sdílet → Kopírovat odkaz a vlož ho sem. Když pole necháš prázdné, odkaz na mapu se vytvoří z adresy.</div>
       <button class="btn block" type="submit">Přidat tip</button></form></section>`;
   document.getElementById('tf').onsubmit = async (e) => {
     e.preventDefault();
