@@ -10,7 +10,8 @@ Veřejný mobilní web, zabezpečený Admin a samostatná stadionová obrazovka 
 |---|---|
 | Web | https://marekfikejs-deere81.github.io/o-putovni-pohar/ |
 | Stadion (přímý vstup) | https://marekfikejs-deere81.github.io/o-putovni-pohar/stadion.html |
-| API (Cloudflare Worker) | doplní se v etapě 2 |
+| API test | https://o-putovni-pohar-api-test.marek-fikejs.workers.dev/api/health |
+| API produkce | https://o-putovni-pohar-api.marek-fikejs.workers.dev/api/health |
 
 ## Architektura
 
@@ -50,6 +51,13 @@ npm run dev       # build + lokální server na http://localhost:5173
 - Workflow **Databáze – migrace a seed**: po změně `db/` nebo `data/` automaticky na větev `test`; produkce jen ručně přes *Run workflow → production*.
 - Secrets v GitHubu: `NEON_TEST_OWNER_URL`, `NEON_PROD_OWNER_URL` (vlastník schématu, bez poolingu).
 - Lokálně: `DATABASE_URL=… node scripts/migrate.mjs --seed`. Testy používají PGlite, Neon nepotřebují.
+
+## API server (Cloudflare Worker)
+
+- `worker/src/index.js`: `GET /api/health`, `GET /api/public` (veřejný model s ETag/304), `/api/admin/*` jen pro ověřené správce.
+- Veřejný model staví `shared/public-model.js` – stejná logika pro mobil, stadion i PDF.
+- Workflow **API server**: test automaticky, produkce ručně. `DATABASE_URL` se do Workeru předává z GitHub Secrets (`NEON_*_RUNTIME_URL`, role `app_runtime`).
+- Obnova dat: stadion 5 s, telefony 15 s jen při viditelné stránce (bezplatný limit Workeru 100 000 požadavků/den).
 
 ## Nasazení
 

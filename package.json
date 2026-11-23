@@ -13,9 +13,12 @@
     "dev": "node scripts/build.mjs && npx --yes serve dist -l 5173"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.17"
+    "@electric-sql/pglite": "^0.5.17",
+    "wrangler": "^4.166.0"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.1",
+    "jose": "^6.2.18",
     "pg": "^8.23.1"
   }
 }

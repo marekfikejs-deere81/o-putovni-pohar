@@ -1,0 +1,24 @@
+# Cloudflare Worker – API turnaje. Nasazuje GitHub Actions (workflow worker.yml).
+# Tajemství (DATABASE_URL, NEON_AUTH_*) se nastavují přes `wrangler secret`, nikdy sem.
+name = "o-putovni-pohar-api-test"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+account_id = "56139aff8f3da503f6c2610b2d545ba7"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ENVIRONMENT = "test"
+ALLOWED_ORIGINS = "https://marekfikejs-deere81.github.io,http://localhost:5173"
+
+[observability]
+enabled = true
+
+[env.production]
+name = "o-putovni-pohar-api"
+workers_dev = true
+preview_urls = false
+
+[env.production.vars]
+ENVIRONMENT = "production"
+ALLOWED_ORIGINS = "https://marekfikejs-deere81.github.io"

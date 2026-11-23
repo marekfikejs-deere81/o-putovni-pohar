@@ -1,0 +1,68 @@
+name: API server (Cloudflare Worker)
+
+# Test: automaticky po změně worker/ nebo shared/ na main.
+# Produkce: jen ručně (Actions → API server → Run workflow → production).
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', 'shared/**', 'package-lock.json', '.github/workflows/worker.yml']
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Cíl nasazení'
+        type: choice
+        options: [test, production]
+        default: test
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-${{ inputs.target || 'test' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'production' && 'production' || 'test' }}
+    env:
+      TARGET: ${{ inputs.target || 'test' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+      - name: Nasazení Workeru
+        working-directory: worker
+        run: |
+          if [ "$TARGET" = "production" ]; then ENVFLAG="--env production"; else ENVFLAG=""; fi
+          npx wrangler deploy $ENVFLAG
+
+      - name: Tajemství Workeru (DATABASE_URL)
+        working-directory: worker
+        env:
+          DB_URL: ${{ inputs.target == 'production' && secrets.NEON_PROD_RUNTIME_URL || secrets.NEON_TEST_RUNTIME_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then echo "::error::Chybí runtime připojení k databázi v GitHub Secrets."; exit 1; fi
+          case "$DB_URL" in postgresql://app_runtime:*) ;; *) echo "::error::Runtime připojení musí používat roli app_runtime."; exit 1;; esac
+          if [ "$TARGET" = "production" ]; then ENVFLAG="--env production"; else ENVFLAG=""; fi
+          printf '%s' "$DB_URL" | npx wrangler secret put DATABASE_URL $ENVFLAG
+
+      - name: Kontrola živé adresy
+        run: |
+          if [ "$TARGET" = "production" ]; then NAME=o-putovni-pohar-api; else NAME=o-putovni-pohar-api-test; fi
+          URL="https://$NAME.marek-fikejs.workers.dev"
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$URL/api/health" -o health.json; then break; fi; sleep 5
+          done
+          cat health.json; echo
+          grep -q '"ok":true' health.json
+          grep -q '"teams":10' health.json
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/public"); echo "public: $code"; test "$code" = 200
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/api/admin/me"); echo "admin bez přihlášení: $code"; test "$code" = 401
+          echo "API_URL=$URL" >> "$GITHUB_STEP_SUMMARY"
