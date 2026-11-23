@@ -1,0 +1,39 @@
+name: Generálka (test)
+
+# Ruční spuštění: Actions → Generálka (test) → Run workflow.
+# Pracuje jen s testovacím API a testovací větví Neonu; produkci nikdy nemění.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: generalka
+  cancel-in-progress: false
+
+jobs:
+  generalka:
+    runs-on: ubuntu-latest
+    environment: test
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prohlížeč pro kontrolu webu
+        run: npm i --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: Generálka
+        run: node scripts/generalka.mjs
+        env:
+          DATABASE_URL: ${{ secrets.NEON_TEST_OWNER_URL }}
+      - name: Snímky, zápis a souhrn
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generalka
+          path: generalka/
+          retention-days: 14
