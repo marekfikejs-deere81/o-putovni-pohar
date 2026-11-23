@@ -72,6 +72,7 @@ let prices = { player: 140, staff: 170 };
 const rowPrice = (r) => r.players * prices.player + r.staff * prices.staff;
 let flash = null;
 let generated = null; // [{key,label,token}] – jen v paměti, po obnovení stránky zmizí
+let tab = 'obedy';
 
 async function call(method, path, body) {
   const headers = {};
@@ -170,8 +171,55 @@ function renderReset(token) {
 // ---------- admin: obědy ----------
 const teamLink = (token) => `${location.origin}${location.pathname.replace(/admin\.html$/, '')}obedy.html#t=${token}`;
 
+const tabsHtml = () => `<div class="tabs"><button data-tab="obedy" class="${tab === 'obedy' ? 'on' : ''}">Obědy</button><button data-tab="posta" class="${tab === 'posta' ? 'on' : ''}">Pošta</button></div>`;
+function wireTabs() { app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { tab = b.dataset.tab; renderAdmin(); }); }
+
+const MAIL_STATUS = { pending: ['čeká', 'no'], sending: ['odesílá se', 'no'], sent: ['odesláno', 'ok'], failed: ['chyba', 'err'], unknown: ['ke kontrole', 'err'] };
+async function renderMail() {
+  app.innerHTML = `${tabsHtml()}<div class="card">Načítání…</div>`; wireTabs();
+  let d;
+  try { d = await call('GET', '/api/admin/mail'); }
+  catch (err) { if (!err.silent) app.innerHTML = `${tabsHtml()}<div class="banner err">${esc(err.message)}</div>`; wireTabs(); return; }
+  app.innerHTML = `${banner()}${tabsHtml()}
+    <section class="card"><h2>Gmail</h2>
+      ${d.gmail ? `<p><span class="pill ok">spárováno</span> ${esc(d.gmail.email)} · ${fmt(d.gmail.updatedAt)}</p>` : '<p><span class="pill no">nespárováno</span> Potvrzení se zatím jen řadí do fronty.</p>'}
+      <p class="muted">Režim: <b>${d.mode === 'live' ? 'OSTRÝ – e-maily jdou týmům a Kakosovi' : 'TEST – všechny e-maily jdou jen na ' + esc(d.testRecipients || 'pořadatele')}</b>. Souhrn obědů: ${fmt(d.summaryAt)}.</p>
+      <button class="btn" id="pair">${d.gmail ? 'Spárovat znovu' : 'Spárovat Gmail'}</button>
+      ${d.gmail ? `<button class="btn secondary" id="testmail">Poslat zkušební e-mail mně</button> <button class="btn secondary" id="testsum">Poslat zkušební souhrn mně</button>` : ''}
+    </section>
+    <section class="card"><h2>Fronta e-mailů</h2>
+      <div class="muted">Čeká: ${d.counts.pending} · Problémy: ${d.counts.problems}. „Ke kontrole“ = nevíme, jestli zpráva odešla – podívej se do Gmailu → Odeslané.</div>
+      <div style="overflow-x:auto"><table><thead><tr><th>Vytvořeno</th><th>Komu</th><th>Předmět</th><th>Stav</th><th></th></tr></thead><tbody>
+      ${d.messages.map((m) => { const [label, cls] = MAIL_STATUS[m.status] || [m.status, 'no']; return `<tr>
+        <td>${fmt(m.created_at)}</td><td>${esc(m.to_addr)}${m.cc_addr ? `<div class="muted">kopie ${esc(m.cc_addr)}</div>` : ''}</td>
+        <td>${esc(m.subject)}${m.last_error ? `<div class="muted" style="color:var(--err)">${esc(m.last_error)}</div>` : ''}</td>
+        <td><span class="pill ${cls === 'err' ? 'no' : cls}" ${cls === 'err' ? 'style="background:#fdecea;color:var(--err)"' : ''}>${label}</span><div class="muted">${m.sent_at ? fmt(m.sent_at) : `pokusů ${m.attempts}`}</div></td>
+        <td>${m.status === 'failed' || m.status === 'unknown' ? `<button class="btn small secondary" data-act="retry" data-id="${m.id}">Odeslat znovu</button>` : ''}
+            ${m.status === 'unknown' ? `<button class="btn small secondary" data-act="mark-sent" data-id="${m.id}">Ve Gmailu je – odesláno</button>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="5" class="muted">Zatím žádné e-maily.</td></tr>'}
+      </tbody></table></div></section>`;
+  wireTabs();
+  document.getElementById('pair').onclick = async () => {
+    try { const r = await call('POST', '/api/admin/gmail/start', {}); location.href = r.url; }
+    catch (err) { if (!err.silent) { flash = { t: 'err', m: err.message }; renderMail(); } }
+  };
+  const test = async (kind) => {
+    try { await call('POST', '/api/admin/mail/test', { kind }); flash = { t: 'ok', m: 'Zařazeno – za chvíli přijde do tvé schránky.' }; }
+    catch (err) { if (err.silent) return; flash = { t: 'err', m: err.message }; }
+    setTimeout(renderMail, 1500);
+  };
+  document.getElementById('testmail')?.addEventListener('click', () => test('mail'));
+  document.getElementById('testsum')?.addEventListener('click', () => test('summary'));
+  app.querySelectorAll('[data-act]').forEach((b) => b.onclick = async () => {
+    if (b.dataset.act === 'retry' && !confirm('Opravdu odeslat znovu? Pokud zpráva už odešla, příjemce ji dostane dvakrát.')) return;
+    try { await call('POST', `/api/admin/mail/${b.dataset.id}/${b.dataset.act}`, {}); }
+    catch (err) { if (!err.silent) flash = { t: 'err', m: err.message }; }
+    setTimeout(renderMail, 800);
+  });
+}
+
 async function renderAdmin() {
   setHeader();
+  if (tab === 'posta') return renderMail();
   app.innerHTML = `<div class="card">Načítání objednávek…</div>`;
   let rows;
   try { const d = await call('GET', '/api/admin/orders'); rows = d.orders; if (d.prices) prices = d.prices; }
@@ -180,7 +228,7 @@ async function renderAdmin() {
   const sumP = ordered.reduce((a, r) => a + r.players, 0);
   const sumS = ordered.reduce((a, r) => a + r.staff, 0);
   app.innerHTML = `${banner()}
-    <div class="tabs"><button class="on">Obědy</button></div>
+    ${tabsHtml()}
     <section class="card"><h2>Objednávky obědů</h2>
       <div class="muted">Cena: hráč ${czk(prices.player)}, realizační tým ${czk(prices.staff)}. Uzávěrka pro týmy 12. 12. 2026 ve 24:00. Ty můžeš měnit kdykoli – každá změna jde do historie a odejde nové potvrzení.</div>
       <div style="overflow-x:auto"><table>
@@ -203,6 +251,7 @@ async function renderAdmin() {
       <div id="links">${generated ? linksHtml() : ''}</div>
       <button class="btn" id="gen" style="margin-top:12px">${generated ? 'Vygenerovat znovu všechny' : 'Vygenerovat odkazy pro všech 9 týmů'}</button>
     </section>`;
+  wireTabs();
   app.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => openEdit(rows.find((r) => r.key === b.dataset.edit)));
   document.getElementById('gen').onclick = async (e) => {
     if (!confirm('Vygenerovat nové odkazy? Dosavadní odkazy týmů přestanou platit.')) return;
@@ -270,7 +319,13 @@ try {
   const c = await fetch('config.json', { cache: 'no-store' }).then((r) => r.json());
   api = c.apiBase || '';
 } catch {}
-const resetToken = new URLSearchParams(location.search).get('token');
+const sp = new URLSearchParams(location.search);
+if (sp.get('gmail')) {
+  flash = sp.get('gmail') === 'ok' ? { t: 'ok', m: `Gmail ${sp.get('email') || ''} je spárovaný.` } : { t: 'err', m: sp.get('msg') || 'Párování Gmailu se nepovedlo.' };
+  tab = 'posta';
+  history.replaceState(null, '', location.pathname);
+}
+const resetToken = sp.get('token');
 if (resetToken) renderReset(resetToken);
 else if (auth) renderAdmin();
 else renderLogin();
