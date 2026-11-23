@@ -221,12 +221,15 @@ export async function addTip(q, body, actor) {
   const text = String(body?.body ?? '').trim();
   const address = String(body?.address ?? '').trim();
   const url = String(body?.url ?? '').trim();
+  const web = String(body?.web ?? '').trim();
   if (!title || title.length > 90) throw new ApiError(422, 'Název je povinný (max. 90 znaků).');
   if (text.length > 550 || address.length > 150) throw new ApiError(422, 'Text je příliš dlouhý.');
-  if (url && !/^https:\/\/[^\s]+$/.test(url)) throw new ApiError(422, 'Odkaz musí začínat https://');
+  if (url && !/^https:\/\/[^\s]+$/.test(url)) throw new ApiError(422, 'Odkaz na mapy musí začínat https://');
+  if (web && !/^https?:\/\/[^\s]+$/.test(web)) throw new ApiError(422, 'Odkaz na web musí začínat https:// nebo http://');
+  if (url.length > 600 || web.length > 600) throw new ApiError(422, 'Odkaz je příliš dlouhý.');
   return withTx(q, async () => {
     const [{ s }] = await q(`SELECT COALESCE(max(sort), 0) + 1 AS s FROM parent_tip`);
-    await q(`INSERT INTO parent_tip (title, body, address, url, sort) VALUES ($1, $2, $3, $4, $5)`, [title, text, address, url, s]);
+    await q(`INSERT INTO parent_tip (title, body, address, url, web_url, sort) VALUES ($1, $2, $3, $4, $5, $6)`, [title, text, address, url, web, s]);
     await audit(q, actor, 'tip.add', null, { title });
     await bump(q);
     return { ok: true };

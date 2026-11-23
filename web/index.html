@@ -104,6 +104,11 @@ footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;mi
 .export small{display:block}
 .pdf.off{background:#e6edf2;color:#7890a2;cursor:not-allowed}
 .maplink{display:inline-block;margin-top:6px;font-weight:600;color:#124f83}
+.links{display:flex;gap:18px;flex-wrap:wrap}
+.stream{display:block;border-radius:10px;overflow:hidden;background:#232b47;color:#fff;text-decoration:none;margin:6px 0 14px}
+.stream img{display:block;width:100%;height:auto;padding:14px 16px 0}
+.stream span{display:block;padding:10px 14px 14px;line-height:1.4}
+.stream u{color:#ff6b78;font-weight:700;white-space:nowrap}
 .pdf{display:block;text-align:center;background:#114b83;color:#fff;border-radius:9px;padding:12px;font-weight:700;margin:4px 0 12px;text-decoration:none}
 @media(max-width:379px){.matrix .rowteam img{display:none}}
 </style>
@@ -290,7 +295,8 @@ function pageProgram() {
 
 // ---------- Umístění ----------
 function pageUmisteni() {
-  const places = M.matches.filter((m) => m.place).sort((a, b) => a.place - b.place);
+  // Podle času v programu (nahoře první utkání o umístění, dole finále), ve stejném čase plocha A, pak B.
+  const places = M.matches.filter((m) => m.place).sort((a, b) => blockOf(a).from - blockOf(b).from || a.rink.localeCompare(b.rink));
   const seeded = places.some((m) => m.home != null);
   return `<h2>O umístění</h2>${banner()}
     ${!seeded ? '<p class="note">Dvojice se doplní po dohrání obou skupin podle konečného pořadí.</p>' : ''}
@@ -330,7 +336,8 @@ function pageObedy() {
 
 // ---------- Propozice a Pro rodiče ----------
 function pagePropozice() {
-  return `<h2>Propozice</h2>${fillPropozice(M.tournament.lunch).map((s) => `<details><summary>${esc(s.title)}</summary>
+  const pdf = M.propozicePdf ? `<a class="pdf" href="${api}/api/propozice.pdf?v=${M.propozicePdf.version}" target="_blank" rel="noopener">Stáhnout propozice (PDF)</a>` : '';
+  return `<h2>Propozice</h2>${pdf}${fillPropozice(M.tournament.lunch).map((s) => `<details><summary>${esc(s.title)}</summary>
     ${s.items ? `<dl>${s.items.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
     ${(s.text || []).map((p) => `<p>${esc(p)}</p>`).join('')}
     ${s.list ? `<ul>${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
@@ -338,8 +345,14 @@ function pagePropozice() {
 }
 function pageRodice() {
   const tips = M.tips || [];
-  return `<h2>Pro rodiče</h2><h3>Restaurace a tipy v okolí</h3>
-    ${tips.length ? tips.map((t) => { const map = t.url && /^https:\/\//.test(t.url) ? t.url : t.address ? `https://mapy.cz/zakladni?q=${encodeURIComponent(t.address)}` : ''; return `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}${map ? `<a class="maplink" href="${esc(map)}" target="_blank" rel="noopener">Otevřít v mapách</a>` : ''}</article>`; }).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
+  return `<h2>Pro rodiče</h2><h3>Fotogalerie turnaje</h3>
+    <p class="note">Fotogalerie bude aktivní a doplněná po turnaji.</p>
+    <h3>Živé přenosy</h3>
+    <a class="stream" href="https://www.czechicehockey.tv/cs/club/hc-rytiri-vlasim/Turnaje" target="_blank" rel="noopener">
+      <img src="loga/partneri/czechicehockey-tv.jpg" alt="CzechIceHockey.tv" width="640" height="182">
+      <span>Všechny zápasy turnaje budou živě přenášeny přes platformu <b>www.czechicehockey.tv</b>. <u>Sledovat přenosy</u></span></a>
+    <h3>Restaurace a tipy v okolí</h3>
+    ${tips.length ? tips.map((t) => { const map = t.url && /^https:\/\//.test(t.url) ? t.url : t.address ? `https://mapy.cz/zakladni?q=${encodeURIComponent(t.address)}` : ''; return `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}<div class="links">${map ? `<a class="maplink" href="${esc(map)}" target="_blank" rel="noopener">Otevřít v mapách</a>` : ''}${t.web && /^https?:\/\//.test(t.web) ? `<a class="maplink" href="${esc(t.web)}" target="_blank" rel="noopener">Webové stránky</a>` : ''}</div></article>`; }).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
     <h3>Kontakt</h3><p>Pořadatel turnaje: Tomáš Vondráček, +420 734 362 033<br>Stravování: Martin Kakos, +420 732 773 346</p>`;
 }
 

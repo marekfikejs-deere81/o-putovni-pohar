@@ -149,10 +149,12 @@ test('Týmy a tipy', async () => {
   assert.equal(M.teams.find((t) => t.id === 2).name, 'HC Lev Benešov 2019');
   await assert.rejects(updateTeam(q, 2, { line1: 'X', line2: '', code: 'VLA', color: '#000000' }, A), (e) => e.status === 409);
   await assert.rejects(updateTeam(q, 2, { line1: 'X', line2: '', code: 'b', color: '#000000' }, A), (e) => e.status === 422);
-  await addTip(q, { title: 'Pizzerie Na náměstí', body: 'Rezervace doporučena', address: 'Vlašim, Palackého nám.', url: 'https://example.cz' }, A);
+  await addTip(q, { title: 'Pizzerie Na náměstí', body: 'Rezervace doporučena', address: 'Vlašim, Palackého nám.', url: 'https://mapy.cz/s/abc', web: 'https://pizzerie.example.cz' }, A);
   await assert.rejects(addTip(q, { title: 'X', url: 'javascript:alert(1)' }, A), (e) => e.status === 422);
+  await assert.rejects(addTip(q, { title: 'X', web: 'javascript:alert(1)' }, A), (e) => e.status === 422);
   M = await model(q);
   assert.equal(M.tips.length, 1);
+  assert.equal(M.tips[0].web, 'https://pizzerie.example.cz');
   await deleteTip(q, M.tips[0].id, A);
   assert.equal((await model(q)).tips.length, 0);
 });

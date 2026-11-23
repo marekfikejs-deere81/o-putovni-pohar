@@ -20,7 +20,7 @@ const logo = (id, esc) => (id != null ? `<img src="${esc(team(id).logo.web)}" al
 // ---------- Výsledky ----------
 export async function renderResults(app, ctx, head) {
   const { esc } = ctx;
-  app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   const chip = (m) => {
     const n = m.periods.length;
@@ -121,7 +121,7 @@ function wireEditor(app, ctx, head) {
 // ---------- Pořadí: los a ruční pořadí ----------
 export async function renderOrder(app, ctx, head) {
   const { esc } = ctx;
-  app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   const manual = M.groups.A.manual && M.groups.B.manual;
   if (!orderDraft) orderDraft = { A: M.groups.A.rows.map((r) => r.id), B: M.groups.B.rows.map((r) => r.id) };
@@ -130,8 +130,8 @@ export async function renderOrder(app, ctx, head) {
     <section class="card"><h2>Los pořadatele</h2>
       ${lots.length ? lots.map((t, k) => `<form class="lot" data-g="${t.g}" data-k="${k}" style="margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px">
         <b>Skupina ${t.g} · shoda na ${t.rank}. místě</b>
-        ${t.ids.map((id) => `<div style="display:flex;align-items:center;gap:8px;margin:6px 0">${logo(id, esc)} <span style="flex:1">${esc(team(id).name)}</span>
-          <select name="${id}" style="width:auto">${t.ids.map((_, i) => `<option value="${i + 1}">${t.rank + i}. místo</option>`).join('')}</select></div>`).join('')}
+        ${t.ids.map((id) => `<div style="display:flex;align-items:center;gap:8px;margin:6px 0">${logo(id, esc)} <span style="flex:1;min-width:0">${esc(team(id).name)}</span>
+          <select name="${id}" style="width:7.5em;flex:none">${t.ids.map((_, i) => `<option value="${i + 1}">${t.rank + i}. místo</option>`).join('')}</select></div>`).join('')}
         <button class="btn" type="submit">Uložit výsledek losu</button></form>`).join('')
         : `<p class="muted">${M.groups.A.finished && M.groups.B.finished ? 'Žádná nevyřešená shoda – los není potřeba.' : 'Los se zadává až po dohrání skupiny, pokud po všech kritériích zůstane shoda.'}</p>`}
     </section>
@@ -177,7 +177,7 @@ export async function renderOrder(app, ctx, head) {
 // ---------- Rozpis ----------
 export async function renderSchedule(app, ctx, head) {
   const { esc } = ctx;
-  app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   const rng = (a, b) => `${toHHMM(a)}–${toHHMM(b)}`;
   app.innerHTML = `${ctx.head()}<section class="card"><h2>Úprava rozpisu</h2>
@@ -213,7 +213,7 @@ export async function renderSchedule(app, ctx, head) {
 // ---------- Týmy ----------
 export async function renderTeams(app, ctx, head) {
   const { esc } = ctx;
-  app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   app.innerHTML = `${ctx.head()}<section class="card"><h2>Týmy</h2><div class="muted">Název je na dvou řádcích (jak se zobrazí v tabulkách). Zkratka a barva se použijí na stadionu.</div>
     ${M.teams.map((t) => `<form class="tf" data-id="${t.id}" style="margin:12px 0;padding:10px;border:1px solid var(--line);border-radius:10px">
@@ -230,18 +230,52 @@ export async function renderTeams(app, ctx, head) {
   });
 }
 
+// ---------- Propozice: PDF ke stažení ----------
+export async function renderPropozice(app, ctx, head) {
+  const { esc } = ctx;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
+  try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
+  const f = M.propozicePdf;
+  const kb = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1).replace('.', ',')} MB` : `${Math.max(1, Math.round(n / 1024))} kB`);
+  app.innerHTML = `${ctx.head()}<section class="card"><h2>PDF propozic</h2>
+    <p class="muted">Nahrané PDF se zobrazí na webu v záložce Propozice jako tlačítko ke stažení. Nové nahrání nahradí předchozí soubor. Maximálně 8 MB.</p>
+    ${f ? `<p><span class="pill ok">nahráno</span> <b>${esc(f.name)}</b> · ${kb(f.size)} · verze ${f.version}<br>
+      <a href="${ctx.api()}/api/propozice.pdf?v=${f.version}" target="_blank" rel="noopener">Otevřít PDF</a></p>` : '<p><span class="pill no">zatím nenahráno</span></p>'}
+    <form id="pf"><label for="pdf">${f ? 'Nahrát novou verzi' : 'Vybrat PDF'}</label><input id="pdf" name="pdf" type="file" accept="application/pdf,.pdf" required>
+      <button class="btn block" type="submit">Nahrát PDF</button></form>
+    ${f ? '<button class="btn secondary" id="pdel" style="margin-top:10px">Odebrat PDF z webu</button>' : ''}</section>`;
+  document.getElementById('pf').onsubmit = async (e) => {
+    e.preventDefault();
+    const file = document.getElementById('pdf').files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { ctx.flash('err', 'PDF je větší než 8 MB.'); return renderPropozice(app, ctx, head); }
+    e.target.querySelector('button').disabled = true;
+    try { await ctx.call('PUT', '/api/admin/propozice-pdf', file); ctx.flash('ok', 'PDF propozic nahráno.'); }
+    catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
+    renderPropozice(app, ctx, head);
+  };
+  const del = document.getElementById('pdel');
+  if (del) del.onclick = async () => {
+    if (!confirm('Odebrat PDF propozic z webu?')) return;
+    try { await ctx.call('DELETE', '/api/admin/propozice-pdf'); ctx.flash('ok', 'PDF odebráno.'); }
+    catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
+    renderPropozice(app, ctx, head);
+  };
+}
+
 // ---------- Tipy pro rodiče ----------
 export async function renderTips(app, ctx, head) {
   const { esc } = ctx;
-  app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   app.innerHTML = `${ctx.head()}<section class="card"><h2>Tipy pro rodiče</h2>
-    ${M.tips.length ? M.tips.map((t) => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(t.title)}</b> <span class="muted">${esc(t.address)}</span>${t.url ? `<div><a href="${esc(t.url)}" target="_blank" rel="noopener">Odkaz na mapy</a></div>` : t.address ? '<div class="muted">mapa podle adresy</div>' : ''}
+    ${M.tips.length ? M.tips.map((t) => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(t.title)}</b> <span class="muted">${esc(t.address)}</span><div>${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">Mapa</a>` : t.address ? '<span class="muted">mapa podle adresy</span>' : ''}${t.web ? ` · <a href="${esc(t.web)}" target="_blank" rel="noopener">Web</a>` : ''}</div>
       <button class="btn small secondary" data-del="${t.id}" style="margin-top:4px">Odebrat</button></div>`).join('') : '<p class="muted">Zatím žádné tipy.</p>'}
     <form id="tf" style="margin-top:12px"><label>Název (např. restaurace)</label><input name="title" maxlength="90" required>
       <label>Adresa</label><input name="address" maxlength="150">
       <label>Odkaz na mapy (Mapy.cz nebo Google Maps)</label><input name="url" type="url" placeholder="https://mapy.cz/…">
       <div class="muted">V mapách klepni na Sdílet → Kopírovat odkaz a vlož ho sem. Když pole necháš prázdné, odkaz na mapu se vytvoří z adresy.</div>
+      <label>Webové stránky (nepovinné)</label><input name="web" type="url" placeholder="https://www.restaurace.cz">
       <button class="btn block" type="submit">Přidat tip</button></form></section>`;
   document.getElementById('tf').onsubmit = async (e) => {
     e.preventDefault();
@@ -261,17 +295,17 @@ export async function renderTips(app, ctx, head) {
 const ACTION = {
   'period.confirm': 'Potvrzena třetina', 'period.correct': 'Opravena třetina', 'period.delete': 'Smazána třetina', 'shootout.set': 'Nájezdy',
   'lot.set': 'Los', 'lot.clear': 'Los zrušen', 'manual_order.set': 'Ruční pořadí', 'schedule.shift': 'Posun rozpisu', 'team.update': 'Úprava týmu',
-  'tip.add': 'Přidán tip', 'tip.delete': 'Odebrán tip', 'lunch_order.save': 'Objednávka obědů', 'team_access.generate': 'Nové odkazy týmů',
+  'tip.add': 'Přidán tip', 'tip.delete': 'Odebrán tip', 'propozice_pdf.upload': 'Nahráno PDF propozic', 'propozice_pdf.delete': 'Odebráno PDF propozic', 'lunch.settings': 'Cena a menu obědu', 'lunch_order.save': 'Objednávka obědů', 'team_access.generate': 'Nové odkazy týmů',
   'gmail.paired': 'Spárován Gmail', 'mail.retry': 'Znovu odeslat e-mail', 'mail.mark-sent': 'E-mail potvrzen ručně', 'admin_user.add': 'Přidán správce',
 };
 export async function renderAudit(app, ctx, head) {
   const { esc, fmt } = ctx;
-  app.innerHTML = `${ctx.head()}<div class="card">Načítání…</div>`;
+  app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   let rows;
   try { rows = (await ctx.call('GET', '/api/admin/audit')).rows; } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   const short = (o) => (o ? esc(JSON.stringify(o)).slice(0, 160) : '');
   app.innerHTML = `${ctx.head()}<section class="card"><h2>Historie změn</h2><div class="muted">Posledních 50 změn.</div>
-    <div style="overflow-x:auto"><table><thead><tr><th>Kdy</th><th>Co</th><th>Kdo</th><th class="hide-m">Detail</th></tr></thead><tbody>
-    ${rows.map((r) => `<tr><td>${fmt(r.at)}</td><td>${esc(ACTION[r.action] || r.action)}</td><td class="muted">${esc(r.actor)}</td><td class="hide-m muted">${short(r.before)}${r.before && r.after ? ' → ' : ''}${short(r.after)}</td></tr>`).join('')}
+    <div class="tablewrap"><table class="stack"><thead><tr><th>Kdy</th><th>Co</th><th>Kdo</th><th class="hide-m">Detail</th></tr></thead><tbody>
+    ${rows.map((r) => `<tr><td class="muted">${fmt(r.at)}</td><td><b>${esc(ACTION[r.action] || r.action)}</b></td><td class="muted">${esc(String(r.actor).replace(/^admin:/, ''))}</td><td class="hide-m muted">${short(r.before)}${r.before && r.after ? ' → ' : ''}${short(r.after)}</td></tr>`).join('')}
     </tbody></table></div></section>`;
 }

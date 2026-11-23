@@ -11,6 +11,7 @@ import { startOAuth, finishOAuth, gmailSend } from './gmail.js';
 import { savePeriod, deletePeriod, setShootout, setLots, clearLots, setManualOrder, shiftSchedule, updateTeam, addTip, deleteTip, auditLog } from './results.js';
 import { processOutbox, maybeQueueSummary, queueTest, mailStatus, adminMailAction } from './mail.js';
 import { reportPdf } from './report.js';
+import { savePropozicePdf, deletePropozicePdf, loadPropozicePdf, MAX_PDF } from './files.js';
 import fontRegular from '../fonts/DejaVuSans.ttf';
 import fontBold from '../fonts/DejaVuSans-Bold.ttf';
 import { requireAdmin as requireAdminSession, login, logout, requestPasswordReset, resetPassword, signUpOwner } from './auth.js';
@@ -28,7 +29,7 @@ function corsHeaders(request, env) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, If-None-Match, Idempotency-Key, X-Order-Token',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, If-None-Match, Idempotency-Key, X-Order-Token, X-Filename',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Expose-Headers': 'ETag, X-Revision, X-Server-Time',
     'Access-Control-Max-Age': '86400',
@@ -187,6 +188,32 @@ export default {
       }
       if (url.pathname === '/api/health' && request.method === 'GET') return await health(request, env);
       if (url.pathname === '/api/public' && request.method === 'GET') return await publicModel(request, env);
+      if (url.pathname === '/api/propozice.pdf' && request.method === 'GET') {
+        const f = await loadPropozicePdf(db(env));
+        if (!f) throw new ApiError(404, 'PDF propozic zatím není k dispozici.');
+        return new Response(f.bytes, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf', ...SECURITY_HEADERS, ...corsHeaders(request, env),
+            'Content-Disposition': `inline; filename="propozice.pdf"; filename*=UTF-8''${encodeURIComponent(f.filename)}`,
+            'Cache-Control': 'public, max-age=60',
+          },
+        });
+      }
+      if (url.pathname === '/api/admin/propozice-pdf' && request.method === 'PUT') {
+        const admin = await requireAdmin(request, env);
+        if (Number(request.headers.get('Content-Length') || 0) > MAX_PDF) throw new ApiError(413, 'PDF je větší než 8 MB.');
+        const bytes = new Uint8Array(await request.arrayBuffer());
+        let name = 'propozice.pdf';
+        try { name = decodeURIComponent(request.headers.get('X-Filename') || name); } catch {}
+        const res = await withClient(env, ctx, (q) => savePropozicePdf(q, bytes, name, `admin:${admin.email}`));
+        return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/api/admin/propozice-pdf' && request.method === 'DELETE') {
+        const admin = await requireAdmin(request, env);
+        const res = await withClient(env, ctx, (q) => deletePropozicePdf(q, `admin:${admin.email}`));
+        return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
       if (url.pathname === '/api/report.pdf' && request.method === 'GET') {
         const r = await reportPdf(db(env), { regular: fontRegular, bold: fontBold });
         if (!r) throw new ApiError(404, 'Zápis turnaje bude k dispozici po potvrzení vítěze finále.');

@@ -109,7 +109,8 @@ export function buildPublicModel(raw) {
       lunch: { prices: { player: t.lunch_price_player_czk, staff: t.lunch_price_staff_czk }, deadline: t.lunch_deadline, menu: t.lunch_menu },
     },
     teams, blocks, matches, groups, lunches, orders,
-    tips: (raw.tips || []).map((x) => ({ id: x.id, title: x.title, body: x.body, address: x.address, url: x.url })),
+    propozicePdf: raw.propozicePdf?.[0] ? { name: raw.propozicePdf[0].filename, size: raw.propozicePdf[0].size, version: raw.propozicePdf[0].version } : null,
+    tips: (raw.tips || []).map((x) => ({ id: x.id, title: x.title, body: x.body, address: x.address, url: x.url, web: x.web_url || '' })),
     finalDone: matches.some((m) => m.place === 1 && m.winner !== null),
     reportReady: matches.some((m) => m.place === 1 && m.winner !== null),
   };

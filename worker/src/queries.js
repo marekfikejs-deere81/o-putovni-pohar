@@ -13,7 +13,8 @@ export const PUBLIC_QUERIES = {
   lots: `SELECT grp, team_id, position FROM lot WHERE tournament_id = $1`,
   lunches: `SELECT id, anchor_block_id, offset_min, length_min, frozen_start FROM lunch_window ORDER BY id`,
   lunchTeams: `SELECT window_id, team_id FROM lunch_window_team`,
-  tips: `SELECT id, title, body, address, url FROM parent_tip ORDER BY sort, id`,
+  propozicePdf: `SELECT filename, octet_length(bytes)::int AS size, version FROM propozice_pdf WHERE id = 1`,
+  tips: `SELECT id, title, body, address, url, web_url FROM parent_tip ORDER BY sort, id`,
   // Veřejně jen počty – žádné e-maily ani poznámky.
   orders: `SELECT k.key, k.label, array_agg(kt.team_id ORDER BY kt.team_id) AS teams, o.players, o.staff
            FROM order_key k JOIN order_key_team kt ON kt.key = k.key LEFT JOIN lunch_order o ON o.key = k.key
