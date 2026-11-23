@@ -63,6 +63,14 @@ function toArena(M) {
 function timer(now) {
   const d = Object.fromEntries(fmt.formatToParts(new Date(now)).map((x) => [x.type, x.value]));
   if (sample) { const b = data.blocks.find((e) => (demo !== 'zapas' ? (!e.games.length && !e.last) : e.games.length)); if (b) return { day: DAY, sec: b.from * 60 + Math.floor((Date.now() - start) / 1000) % ((b.to - b.from) * 60) }; }
+  // ?rotace=1 – zkouška obrazovky se skutečnými daty: střídá zápasy a úpravu ledu (křížové tabulky a pořadí) dokola.
+  if (new URLSearchParams(location.search).has('rotace')) {
+    const games = data.blocks.filter((e) => e.games.length), ice = data.blocks.find((e) => !e.games.length && !e.last);
+    const plan = [[games[0], 12], [games[Math.floor(games.length / 2)], 12], [ice, 40], [games.at(-2) || games.at(-1), 12], [games.at(-1), 12]].filter((x) => x[0]);
+    const total = plan.reduce((t, x) => t + x[1], 0);
+    let t = Math.floor((Date.now() - start) / 1000) % total;
+    for (const [b, len] of plan) { if (t < len) return { day: DAY, sec: b.from * 60 + t }; t -= len; }
+  }
   const test = new URLSearchParams(location.search).get('cas'); // jen pro testování: ?cas=HH:MM
   if (test && /^\d{1,2}:\d{2}$/.test(test)) { const [h, mi] = test.split(':').map(Number); return { day: DAY, sec: h * 3600 + mi * 60 + Math.floor((Date.now() - start) / 1000) }; }
   return { day: d.year + d.month + d.day, sec: +d.hour * 3600 + (+d.minute) * 60 + (+d.second) };

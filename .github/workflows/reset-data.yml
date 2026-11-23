@@ -1,0 +1,34 @@
+name: Smazat provozní data (ručně)
+
+# Smaže výsledky, objednávky, odkazy týmů, frontu e-mailů, tipy, PDF a historii změn.
+# Ponechá týmy, rozpis, správce a spárovaný Gmail. Pro potvrzení napiš SMAZAT.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Větev Neonu'
+        type: choice
+        options: [test, production]
+        default: test
+      confirm:
+        description: 'Napiš SMAZAT'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'production' && 'production' || 'test' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/reset-data.mjs
+        env:
+          DATABASE_URL: ${{ inputs.target == 'production' && secrets.NEON_PROD_OWNER_URL || secrets.NEON_TEST_OWNER_URL }}
+          CONFIRM: ${{ inputs.confirm }}
