@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 import { migrate, seed } from '../db/apply.mjs';
 import {
-  model, savePeriod, deletePeriod, setShootout, setLots, setManualOrder, shiftSchedule, updateTeam, addTip, deleteTip,
+  model, savePeriod, deletePeriod, setShootout, setLots, setManualOrder, shiftSchedule, updateTeam, addTip, updateTip, moveTip, deleteTip,
 } from '../worker/src/results.js';
 
 const A = 'admin:test';
@@ -157,4 +157,21 @@ test('Týmy a tipy', async () => {
   assert.equal(M.tips[0].web, 'https://pizzerie.example.cz');
   await deleteTip(q, M.tips[0].id, A);
   assert.equal((await model(q)).tips.length, 0);
+});
+
+test('Tipy: úprava a řazení šipkami', async () => {
+  const { q } = await setup();
+  for (const t of ['A', 'B', 'C']) await addTip(q, { title: t, address: 'Vlašim' }, A);
+  let M = await model(q);
+  const id = (t) => M.tips.find((x) => x.title === t).id;
+  await moveTip(q, id('C'), -1, A);
+  M = await model(q); assert.deepEqual(M.tips.map((t) => t.title), ['A', 'C', 'B']);
+  await moveTip(q, id('A'), -1, A); // první nahoru – beze změny
+  await moveTip(q, id('A'), 1, A);
+  M = await model(q); assert.deepEqual(M.tips.map((t) => t.title), ['C', 'A', 'B']);
+  await updateTip(q, id('B'), { title: 'Bistro', address: 'Vlašim 2', web: 'https://bistro.example.cz' }, A);
+  M = await model(q); assert.deepEqual([M.tips[2].title, M.tips[2].web], ['Bistro', 'https://bistro.example.cz']);
+  await assert.rejects(updateTip(q, 9999, { title: 'X' }, A), (e) => e.status === 404);
+  await assert.rejects(updateTip(q, M.tips[0].id, { title: '' }, A), (e) => e.status === 422);
+  await assert.rejects(moveTip(q, M.tips[0].id, 2, A), (e) => e.status === 422);
 });

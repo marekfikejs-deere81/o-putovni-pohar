@@ -264,30 +264,42 @@ export async function renderPropozice(app, ctx, head) {
 }
 
 // ---------- Tipy pro rodiče ----------
+let tipEdit = null; // id upravovaného tipu
+const tipForm = (esc, t = {}) => `<label>Název (např. restaurace)</label><input name="title" maxlength="90" required value="${esc(t.title || '')}">
+      <label>Adresa</label><input name="address" maxlength="150" value="${esc(t.address || '')}">
+      <label>Odkaz na mapy (Mapy.cz nebo Google Maps)</label><input name="url" type="url" placeholder="https://mapy.cz/…" value="${esc(t.url || '')}">
+      <div class="muted">V mapách klepni na Sdílet → Kopírovat odkaz a vlož ho sem. Když pole necháš prázdné, odkaz na mapu se vytvoří z adresy.</div>
+      <label>Webové stránky (nepovinné)</label><input name="web" type="url" placeholder="https://www.restaurace.cz" value="${esc(t.web || '')}">`;
 export async function renderTips(app, ctx, head) {
   const { esc } = ctx;
   app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
+  const n = M.tips.length;
   app.innerHTML = `${ctx.head()}<section class="card"><h2>Tipy pro rodiče</h2>
-    ${M.tips.length ? M.tips.map((t) => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${esc(t.title)}</b> <span class="muted">${esc(t.address)}</span><div>${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">Mapa</a>` : t.address ? '<span class="muted">mapa podle adresy</span>' : ''}${t.web ? ` · <a href="${esc(t.web)}" target="_blank" rel="noopener">Web</a>` : ''}</div>
-      <button class="btn small secondary" data-del="${t.id}" style="margin-top:4px">Odebrat</button></div>`).join('') : '<p class="muted">Zatím žádné tipy.</p>'}
-    <form id="tf" style="margin-top:12px"><label>Název (např. restaurace)</label><input name="title" maxlength="90" required>
-      <label>Adresa</label><input name="address" maxlength="150">
-      <label>Odkaz na mapy (Mapy.cz nebo Google Maps)</label><input name="url" type="url" placeholder="https://mapy.cz/…">
-      <div class="muted">V mapách klepni na Sdílet → Kopírovat odkaz a vlož ho sem. Když pole necháš prázdné, odkaz na mapu se vytvoří z adresy.</div>
-      <label>Webové stránky (nepovinné)</label><input name="web" type="url" placeholder="https://www.restaurace.cz">
+    <div class="muted">Pořadí tady = pořadí na webu. Šipkami posuneš tip nahoru nebo dolů.</div>
+    ${n ? M.tips.map((t, i) => tipEdit === t.id
+      ? `<form class="tipedit" data-id="${t.id}" style="padding:10px;margin:8px 0;border:1px solid var(--blue);border-radius:10px">${tipForm(esc, t)}
+          <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" type="submit">Uložit</button><button class="btn secondary" type="button" data-cancel>Zrušit</button></div></form>`
+      : `<div style="display:flex;gap:8px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="btn small secondary" data-mv="${t.id}" data-dir="-1" ${i === 0 ? 'disabled' : ''} aria-label="Posunout nahoru">↑</button>
+            <button class="btn small secondary" data-mv="${t.id}" data-dir="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Posunout dolů">↓</button></div>
+          <div style="flex:1;min-width:0"><b>${i + 1}. ${esc(t.title)}</b><div class="muted">${esc(t.address)}</div>
+            <div>${t.url ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">Mapa</a>` : t.address ? '<span class="muted">mapa podle adresy</span>' : ''}${t.web ? ` · <a href="${esc(t.web)}" target="_blank" rel="noopener">Web</a>` : ''}</div>
+            <div style="display:flex;gap:8px;margin-top:6px"><button class="btn small secondary" data-ed="${t.id}">Upravit</button><button class="btn small secondary" data-del="${t.id}">Odebrat</button></div></div></div>`).join('')
+      : '<p class="muted">Zatím žádné tipy.</p>'}
+    </section>
+    <section class="card"><h2>Přidat tip</h2><form id="tf">${tipForm(esc)}
       <button class="btn block" type="submit">Přidat tip</button></form></section>`;
-  document.getElementById('tf').onsubmit = async (e) => {
-    e.preventDefault();
-    try { await ctx.call('POST', '/api/admin/tips', Object.fromEntries(new FormData(e.target))); ctx.flash('ok', 'Tip přidán.'); }
-    catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
-    renderTips(app, ctx, head);
-  };
-  app.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
-    if (!confirm('Odebrat tip?')) return;
-    try { await ctx.call('DELETE', `/api/admin/tips/${b.dataset.del}`); ctx.flash('ok', 'Tip odebrán.'); }
-    catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
-    renderTips(app, ctx, head);
+  const again = () => renderTips(app, ctx, head);
+  const run = async (fn, ok) => { try { await fn(); if (ok) ctx.flash('ok', ok); } catch (err) { if (err.silent) return; ctx.flash('err', err.message); } again(); };
+  document.getElementById('tf').onsubmit = (e) => { e.preventDefault(); run(() => ctx.call('POST', '/api/admin/tips', Object.fromEntries(new FormData(e.target))), 'Tip přidán.'); };
+  app.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { if (confirm('Odebrat tip?')) run(() => ctx.call('DELETE', `/api/admin/tips/${b.dataset.del}`), 'Tip odebrán.'); });
+  app.querySelectorAll('[data-mv]').forEach((b) => b.onclick = () => run(() => ctx.call('POST', `/api/admin/tips/${b.dataset.mv}/move`, { dir: Number(b.dataset.dir) })));
+  app.querySelectorAll('[data-ed]').forEach((b) => b.onclick = () => { tipEdit = Number(b.dataset.ed); again(); });
+  app.querySelectorAll('.tipedit').forEach((f) => {
+    f.querySelector('[data-cancel]').onclick = () => { tipEdit = null; again(); };
+    f.onsubmit = (e) => { e.preventDefault(); const body = Object.fromEntries(new FormData(f)); run(async () => { await ctx.call('PUT', `/api/admin/tips/${f.dataset.id}`, body); tipEdit = null; }, 'Tip upraven.'); };
   });
 }
 
@@ -295,7 +307,7 @@ export async function renderTips(app, ctx, head) {
 const ACTION = {
   'period.confirm': 'Potvrzena třetina', 'period.correct': 'Opravena třetina', 'period.delete': 'Smazána třetina', 'shootout.set': 'Nájezdy',
   'lot.set': 'Los', 'lot.clear': 'Los zrušen', 'manual_order.set': 'Ruční pořadí', 'schedule.shift': 'Posun rozpisu', 'team.update': 'Úprava týmu',
-  'tip.add': 'Přidán tip', 'tip.delete': 'Odebrán tip', 'propozice_pdf.upload': 'Nahráno PDF propozic', 'propozice_pdf.delete': 'Odebráno PDF propozic', 'lunch.settings': 'Cena a menu obědu', 'lunch_order.save': 'Objednávka obědů', 'team_access.generate': 'Nové odkazy týmů',
+  'tip.add': 'Přidán tip', 'tip.update': 'Upraven tip', 'tip.move': 'Změna pořadí tipů', 'tip.delete': 'Odebrán tip', 'propozice_pdf.upload': 'Nahráno PDF propozic', 'propozice_pdf.delete': 'Odebráno PDF propozic', 'lunch.settings': 'Cena a menu obědu', 'lunch_order.save': 'Objednávka obědů', 'team_access.generate': 'Nové odkazy týmů',
   'gmail.paired': 'Spárován Gmail', 'mail.retry': 'Znovu odeslat e-mail', 'mail.mark-sent': 'E-mail potvrzen ručně', 'admin_user.add': 'Přidán správce',
 };
 export async function renderAudit(app, ctx, head) {

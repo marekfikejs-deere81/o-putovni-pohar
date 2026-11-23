@@ -105,6 +105,7 @@ footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;mi
 .pdf.off{background:#e6edf2;color:#7890a2;cursor:not-allowed}
 .maplink{display:inline-block;margin-top:6px;font-weight:600;color:#124f83}
 .links{display:flex;gap:18px;flex-wrap:wrap}
+.closed{background:#fff1e6;border:2px solid #e8833a;color:#7a3400;font-weight:700;border-radius:10px;padding:12px 14px;margin:14px 0 4px;line-height:1.4}
 .stream{display:block;border-radius:10px;overflow:hidden;background:#232b47;color:#fff;text-decoration:none;margin:6px 0 14px}
 .stream img{display:block;width:100%;height:auto;padding:14px 16px 0}
 .stream span{display:block;padding:10px 14px 14px;line-height:1.4}
@@ -351,6 +352,7 @@ function pageRodice() {
     <a class="stream" href="https://www.czechicehockey.tv/cs/club/hc-rytiri-vlasim/Turnaje" target="_blank" rel="noopener">
       <img src="loga/partneri/czechicehockey-tv.jpg" alt="CzechIceHockey.tv" width="640" height="182">
       <span>Všechny zápasy turnaje budou živě přenášeny přes platformu <b>www.czechicehockey.tv</b>. <u>Sledovat přenosy</u></span></a>
+    <p class="closed">V době výdeje obědů pro hráče a realizační týmy bude restaurace na zimním stadionu pro veřejnost uzavřena. V tu dobu doporučujeme ke stravování využít restaurace uvedené níže.</p>
     <h3>Restaurace a tipy v okolí</h3>
     ${tips.length ? tips.map((t) => { const map = t.url && /^https:\/\//.test(t.url) ? t.url : t.address ? `https://mapy.cz/zakladni?q=${encodeURIComponent(t.address)}` : ''; return `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}<div class="links">${map ? `<a class="maplink" href="${esc(map)}" target="_blank" rel="noopener">Otevřít v mapách</a>` : ''}${t.web && /^https?:\/\//.test(t.web) ? `<a class="maplink" href="${esc(t.web)}" target="_blank" rel="noopener">Webové stránky</a>` : ''}</div></article>`; }).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
     <h3>Kontakt</h3><p>Pořadatel turnaje: Tomáš Vondráček, +420 734 362 033<br>Stravování: Martin Kakos, +420 732 773 346</p>`;

@@ -216,7 +216,7 @@ export async function updateTeam(q, id, body, actor) {
   });
 }
 
-export async function addTip(q, body, actor) {
+function tipFields(body) {
   const title = String(body?.title ?? '').trim();
   const text = String(body?.body ?? '').trim();
   const address = String(body?.address ?? '').trim();
@@ -227,10 +227,44 @@ export async function addTip(q, body, actor) {
   if (url && !/^https:\/\/[^\s]+$/.test(url)) throw new ApiError(422, 'Odkaz na mapy musí začínat https://');
   if (web && !/^https?:\/\/[^\s]+$/.test(web)) throw new ApiError(422, 'Odkaz na web musí začínat https:// nebo http://');
   if (url.length > 600 || web.length > 600) throw new ApiError(422, 'Odkaz je příliš dlouhý.');
+  return { title, text, address, url, web };
+}
+
+export async function addTip(q, body, actor) {
+  const { title, text, address, url, web } = tipFields(body);
   return withTx(q, async () => {
     const [{ s }] = await q(`SELECT COALESCE(max(sort), 0) + 1 AS s FROM parent_tip`);
     await q(`INSERT INTO parent_tip (title, body, address, url, web_url, sort) VALUES ($1, $2, $3, $4, $5, $6)`, [title, text, address, url, web, s]);
     await audit(q, actor, 'tip.add', null, { title });
+    await bump(q);
+    return { ok: true };
+  });
+}
+
+export async function updateTip(q, id, body, actor) {
+  const { title, text, address, url, web } = tipFields(body);
+  return withTx(q, async () => {
+    const [before] = await q(`SELECT title, address, url, web_url FROM parent_tip WHERE id = $1 FOR UPDATE`, [Number(id)]);
+    if (!before) throw new ApiError(404, 'Tip neexistuje.');
+    await q(`UPDATE parent_tip SET title = $2, body = $3, address = $4, url = $5, web_url = $6 WHERE id = $1`, [Number(id), title, text, address, url, web]);
+    await audit(q, actor, 'tip.update', before, { title, address, url, web_url: web });
+    await bump(q);
+    return { ok: true };
+  });
+}
+
+/** Posun tipu o jedno místo nahoru (dir = -1) nebo dolů (dir = 1). */
+export async function moveTip(q, id, dir, actor) {
+  if (dir !== -1 && dir !== 1) throw new ApiError(422, 'Neplatný směr.');
+  return withTx(q, async () => {
+    const rows = await q(`SELECT id, title FROM parent_tip ORDER BY sort, id FOR UPDATE`);
+    const i = rows.findIndex((r) => r.id === Number(id));
+    if (i < 0) throw new ApiError(404, 'Tip neexistuje.');
+    const j = i + dir;
+    if (j < 0 || j >= rows.length) return { ok: true };
+    [rows[i], rows[j]] = [rows[j], rows[i]];
+    for (let k = 0; k < rows.length; k++) await q(`UPDATE parent_tip SET sort = $2 WHERE id = $1`, [rows[k].id, k + 1]);
+    await audit(q, actor, 'tip.move', null, { title: rows[j].title, position: j + 1 });
     await bump(q);
     return { ok: true };
   });
