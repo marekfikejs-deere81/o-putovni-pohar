@@ -57,7 +57,7 @@ npm run dev       # build + lokální server na http://localhost:5173
 - `worker/src/index.js`: `GET /api/health`, `GET /api/public` (veřejný model s ETag/304), `/api/admin/*` jen pro ověřené správce.
 - Veřejný model staví `shared/public-model.js` – stejná logika pro mobil, stadion i PDF.
 - Workflow **API server**: test automaticky, produkce ručně. `DATABASE_URL` se do Workeru předává z GitHub Secrets (`NEON_*_RUNTIME_URL`, role `app_runtime`).
-- Obnova dat: stadion 5 s, telefony 15 s jen při viditelné stránce (bezplatný limit Workeru 100 000 požadavků/den).
+- Obnova dat: stadion i telefony po 5 s (telefony jen při viditelné stránce). Tarif Workers Paid (5 $/měsíc, 10 mil. požadavků) aktivní od 23. 11. 2026 – po turnaji zrušit.
 
 ## Nasazení
 
