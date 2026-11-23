@@ -3,7 +3,6 @@
 const W = 1654, H = 2339; // A4 při 200 dpi
 const NAVY = '#15284b', BLUE = '#3d7cc9', GRAY = '#6f7785', LINE = '#d3d8e0', ZEBRA = '#eaf1fb', ICE = '#f2f4f8', GOLD = '#fff2c2';
 const FONT = 'RozpisSans';
-const SHORT = { BEN: 'Benešov', CEB: 'Budějovice', MBL: 'Boleslav', LIT: 'Litvínov', SVE: 'Světlá', SLA: 'Slavia', KOB: 'Kobra', PLZ: 'Plzeň' };
 
 let fontsReady = null;
 function loadFonts(base) {
@@ -18,10 +17,8 @@ function loadFonts(base) {
 const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 const range = (b) => `${hm(b.from)}–${hm(b.to)}`;
 
-function short(t) {
-  if (!t) return '';
-  return /Vlašim/i.test(t.name) ? t.name : SHORT[t.code] || t.name;
-}
+// Plné názvy týmů – stejně jako v křížové tabulce.
+const short = (t) => (t ? t.name : '');
 
 /** Vykreslí rozpis do canvasu a vrátí ho. */
 export async function drawSchedule(M, base = '') {
@@ -35,7 +32,7 @@ export async function drawSchedule(M, base = '') {
   const text = (s, x, y, { size = 26, bold = false, italic = false, color = '#111', max, fit = false } = {}) => {
     font(size, bold, italic); g.fillStyle = color;
     let str = String(s);
-    if (max && fit) while (g.measureText(str).width > max && size > 19) font(--size, bold, italic);
+    if (max && fit) while (g.measureText(str).width > max && size > 20) font(--size, bold, italic);
     if (max) while (g.measureText(str).width > max && str.length > 3) str = str.slice(0, -2) + '…';
     g.fillText(str, x, y);
   };
@@ -72,7 +69,7 @@ export async function drawSchedule(M, base = '') {
   g.beginPath(); g.moveTo(L + half, top); g.lineTo(L + half, y); g.stroke();
 
   // --- tabulky programu ---
-  const cols = [L, L + 240, L + 240 + (TW - 240) / 2, R];
+  const cols = [L, L + 205, L + 205 + (TW - 205) / 2, R];
   const firstPlace = M.blocks.findIndex((b) => b.games.some((id) => match(id).place));
   const parts = [
     ['Základní skupiny', M.blocks.slice(0, firstPlace < 0 ? M.blocks.length : firstPlace), ['Čas', 'Plocha A – skupina A', 'Plocha B – skupina B']],
@@ -83,28 +80,27 @@ export async function drawSchedule(M, base = '') {
     return t ? short(t) : (m[s === 'home' ? 'homeSeed' : 'awaySeed'] || '');
   };
   const gameText = (m) => {
-    if (!m) return '–';
-    if (!m.place) return `${side(m, 'home')} – ${side(m, 'away')}`;
-    const seeds = `${m.homeSeed} × ${m.awaySeed}`;
-    const tiny = (t) => (/Vlašim\s+([AB])$/i.test(t.name) ? `Vlašim ${t.name.slice(-1)}` : short(t));
-    const names = m.home != null && m.away != null ? `${tiny(team(m.home))} × ${tiny(team(m.away))}` : seeds;
-    return `${m.place === 1 ? 'FINÁLE o 1. místo' : `o ${m.place}. místo`} · ${names}`;
+    if (!m) return ['–'];
+    if (!m.place) return [`${side(m, 'home')} – ${side(m, 'away')}`];
+    const head = `${m.place === 1 ? 'FINÁLE o 1. místo' : `o ${m.place}. místo`} · ${m.homeSeed} × ${m.awaySeed}`;
+    return m.home != null && m.away != null ? [head, `${short(team(m.home))} × ${short(team(m.away))}`] : [head];
   };
-  const RH = 55;
+  const RH0 = 55;
   for (const [title, blocks, head] of parts) {
     if (!blocks.length) continue;
     y += 48;
     text(title, 136, y, { size: 36, bold: true, color: NAVY });
     y += 30;
-    rect(L, y, TW, RH, NAVY);
-    head.forEach((h, i) => text(h, cols[i] + PAD, y + RH / 2, { size: 27, bold: true, color: '#fff' }));
-    y += RH;
+    rect(L, y, TW, RH0, NAVY);
+    head.forEach((h, i) => text(h, cols[i] + PAD, y + RH0 / 2, { size: 27, bold: true, color: '#fff' }));
+    y += RH0;
     const start = y;
     for (const b of blocks) {
       const last = b === M.blocks.at(-1) && !b.games.length;
       const lunch = !b.games.length && /poledn/i.test(b.title);
       const games = b.games.map(match);
       const final = games.some((m) => m.place === 1);
+      const RH = games.some((m) => m.place && m.home != null && m.away != null) ? 86 : RH0;
       const ice = !b.games.length && !lunch && !last;
       const fill = lunch || final ? GOLD : ice ? ICE : last ? ZEBRA : '#fff';
       rect(L, y, TW, RH, fill);
@@ -117,8 +113,14 @@ export async function drawSchedule(M, base = '') {
         for (const k of [1, 2]) text(label, cols[k] + PAD, y + RH / 2, { size: ice ? 24 : 27, bold: strong, italic: ice, color: ice ? GRAY : '#111', max: cols[k + 1] - cols[k] - 2 * PAD });
       } else {
         const a = games.find((m) => m.rink === 'A'), bb = games.find((m) => m.rink === 'B');
-        text(gameText(a), cols[1] + PAD, y + RH / 2, { size: 27, bold: final && a?.place === 1, max: cols[2] - cols[1] - 2 * PAD, fit: true });
-        text(gameText(bb), cols[2] + PAD, y + RH / 2, { size: 27, bold: final && bb?.place === 1, max: cols[3] - cols[2] - 2 * PAD, fit: true });
+        [[a, 1], [bb, 2]].forEach(([m, k]) => {
+          const lines = gameText(m), max = cols[k + 1] - cols[k] - 2 * PAD, b1 = final && m?.place === 1;
+          if (lines.length === 1) text(lines[0], cols[k] + PAD, y + RH / 2, { size: 27, bold: b1, max, fit: true });
+          else {
+            text(lines[0], cols[k] + PAD, y + RH / 2 - 17, { size: 24, bold: b1, color: b1 ? '#111' : GRAY, max, fit: true });
+            text(lines[1], cols[k] + PAD, y + RH / 2 + 17, { size: 26, bold: b1, max, fit: true });
+          }
+        });
       }
       // čáry
       g.strokeStyle = LINE; g.lineWidth = 1.5;
@@ -128,7 +130,7 @@ export async function drawSchedule(M, base = '') {
       g.stroke();
       y += RH;
     }
-    g.strokeStyle = LINE; g.lineWidth = 2; g.strokeRect(L, start - RH, TW, y - start + RH);
+    g.strokeStyle = LINE; g.lineWidth = 2; g.strokeRect(L, start - RH0, TW, y - start + RH0);
   }
 
   // --- poznámka ---
