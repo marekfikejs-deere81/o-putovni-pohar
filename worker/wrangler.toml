@@ -9,6 +9,10 @@ preview_urls = false
 
 [vars]
 ENVIRONMENT = "test"
+NEON_AUTH_URL = "https://ep-little-silence-bhp5b2vh.neonauth.c-10.eu-central-1.aws.neon.tech/neondb/auth"
+OWNER_EMAIL = "marek.fikejs@gmail.com"
+AUTH_ORIGIN = "https://marekfikejs-deere81.github.io"
+ADMIN_PATH = "/o-putovni-pohar/admin.html"
 ALLOWED_ORIGINS = "https://marekfikejs-deere81.github.io,http://localhost:5173"
 
 [observability]
@@ -21,4 +25,8 @@ preview_urls = false
 
 [env.production.vars]
 ENVIRONMENT = "production"
+NEON_AUTH_URL = "https://ep-round-brook-bhiaq2h6.neonauth.c-10.eu-central-1.aws.neon.tech/neondb/auth"
+OWNER_EMAIL = "marek.fikejs@gmail.com"
+AUTH_ORIGIN = "https://marekfikejs-deere81.github.io"
+ADMIN_PATH = "/o-putovni-pohar/admin.html"
 ALLOWED_ORIGINS = "https://marekfikejs-deere81.github.io"

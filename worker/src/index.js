@@ -1,13 +1,15 @@
 // Cloudflare Worker – HTTPS API turnaje O putovní pohár.
 // Veřejné čtení bez přihlášení; každý zápis vyžaduje ověřenou identitu z Neon Auth a záznam v admin_user.
 import { neon, Client } from '@neondatabase/serverless';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { buildPublicModel } from '../../shared/public-model.js';
 import { loadPublicRaw } from './queries.js';
 import { ApiError } from './errors.js';
 import {
   hashToken, isTokenShape, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
 } from './orders.js';
+import { requireAdmin as requireAdminSession, login, logout, requestPasswordReset, resetPassword, signUpOwner } from './auth.js';
+
+const requireAdmin = (request, env) => requireAdminSession(request, env, db(env));
 
 const TOURNAMENT_ID = 'vlasim-2026';
 
@@ -81,29 +83,6 @@ async function orderTokenHash(request) {
   return hashToken(token);
 }
 
-// ---------- ověření správce ----------
-
-let jwks;
-async function requireAdmin(request, env) {
-  if (!env.NEON_AUTH_JWKS_URL) throw new ApiError(401, 'Přihlášení správce zatím není nastavené.');
-  const auth = request.headers.get('Authorization') || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-  if (!token) throw new ApiError(401, 'Pro tuto akci se přihlas jako správce.');
-  jwks ||= createRemoteJWKSet(new URL(env.NEON_AUTH_JWKS_URL));
-  let payload;
-  try {
-    ({ payload } = await jwtVerify(token, jwks, {
-      ...(env.NEON_AUTH_ISSUER ? { issuer: env.NEON_AUTH_ISSUER } : {}),
-      ...(env.NEON_AUTH_AUDIENCE ? { audience: env.NEON_AUTH_AUDIENCE } : {}),
-    }));
-  } catch {
-    throw new ApiError(401, 'Přihlášení vypršelo nebo není platné. Přihlas se znovu.');
-  }
-  const rows = await db(env)('SELECT auth_user_id, email FROM admin_user WHERE auth_user_id = $1', [String(payload.sub)]);
-  if (!rows.length) throw new ApiError(403, 'Tento účet nemá oprávnění správce.');
-  return rows[0];
-}
-
 // ---------- trasy ----------
 
 async function publicModel(request, env) {
@@ -126,7 +105,7 @@ async function health(request, env) {
   const [r] = await db(env)('SELECT revision::text AS revision, (SELECT count(*)::int FROM team) AS teams FROM tournament WHERE id = $1', [TOURNAMENT_ID]);
   return json(request, env, 200, {
     ok: true, env: env.ENVIRONMENT || 'unknown', revision: Number(r?.revision ?? -1), teams: r?.teams ?? 0,
-    dbMs: Date.now() - started, auth: Boolean(env.NEON_AUTH_JWKS_URL), time: new Date().toISOString(),
+    dbMs: Date.now() - started, auth: Boolean(env.NEON_AUTH_URL), time: new Date().toISOString(),
   });
 }
 
@@ -151,6 +130,26 @@ export default {
         const idem = request.headers.get('Idempotency-Key');
         const res = await withClient(env, ctx, (q) => submitTeamOrder(q, h, body, idem, new Date().toISOString()));
         return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
+
+      // --- přihlášení správce (proxy na Neon Auth) ---
+      if (url.pathname === '/api/auth/login' && request.method === 'POST') {
+        const res = await login(env, db(env), await readJson(request));
+        return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
+        const a = request.headers.get('Authorization') || '';
+        await logout(env, a.startsWith('Bearer ') ? a.slice(7).trim() : '').catch(() => {});
+        return json(request, env, 200, { ok: true });
+      }
+      if (url.pathname === '/api/auth/signup-owner' && request.method === 'POST') {
+        return json(request, env, 200, await signUpOwner(env, db(env), await readJson(request)));
+      }
+      if (url.pathname === '/api/auth/password-reset/request' && request.method === 'POST') {
+        return json(request, env, 200, await requestPasswordReset(env, await readJson(request)));
+      }
+      if (url.pathname === '/api/auth/password-reset' && request.method === 'POST') {
+        return json(request, env, 200, await resetPassword(env, await readJson(request)));
       }
 
       // --- správce ---

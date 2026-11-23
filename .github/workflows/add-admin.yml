@@ -1,0 +1,33 @@
+name: Správce – přidat (ručně)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Větev Neonu'
+        type: choice
+        options: [test, production]
+        default: test
+      email:
+        description: 'E-mail už zaregistrovaného účtu'
+        required: true
+        default: marek.fikejs@gmail.com
+
+permissions:
+  contents: read
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'production' && 'production' || 'test' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/add-admin.mjs
+        env:
+          DATABASE_URL: ${{ inputs.target == 'production' && secrets.NEON_PROD_OWNER_URL || secrets.NEON_TEST_OWNER_URL }}
+          ADMIN_EMAIL: ${{ inputs.email }}

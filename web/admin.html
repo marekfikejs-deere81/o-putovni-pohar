@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<link rel="icon" href="loga/web/VLA.png">
+<title>Admin · O putovní pohár</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--navy:#10335c;--blue:#1f5fae;--ink:#10233f;--muted:#5d6f8a;--line:#dfe6f0;--bg:#f4f6fa;--ok:#1e7a46;--err:#b42318}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.4}
+  header{background:var(--navy);color:#fff;padding:12px 16px;display:flex;gap:10px;align-items:center}
+  header img{width:38px;height:38px;background:#fff;border-radius:8px;object-fit:contain;padding:2px}
+  header h1{margin:0;font-size:18px;flex:1}
+  header button{background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:8px;padding:6px 10px;font:inherit;cursor:pointer}
+  header .who{font-size:12px;opacity:.8}
+  main{max-width:900px;margin:0 auto;padding:14px}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,35,63,.06)}
+  .narrow{max-width:420px;margin:30px auto}
+  h2{margin:0 0 12px;font-size:18px}
+  label{display:block;font-weight:600;margin:10px 0 4px}
+  input,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+  .btn{display:inline-block;border:0;border-radius:10px;background:var(--blue);color:#fff;font:inherit;font-weight:700;padding:10px 14px;cursor:pointer}
+  .btn.block{display:block;width:100%;height:46px;margin-top:14px}
+  .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+  .btn.small{padding:6px 10px;font-size:13px}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .link{background:none;border:0;color:var(--blue);text-decoration:underline;cursor:pointer;font:inherit;padding:0}
+  .banner{border-radius:10px;padding:10px 12px;margin-bottom:12px;font-weight:600}
+  .banner.ok{background:#e7f6ed;color:var(--ok)} .banner.err{background:#fdecea;color:var(--err)} .banner.warn{background:#fff7e0;color:#7a5a00}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  .muted{color:var(--muted);font-size:13px}
+  .pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;font-weight:700}
+  .pill.ok{background:#e7f6ed;color:var(--ok)} .pill.no{background:#f1f3f7;color:var(--muted)}
+  .totals{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-weight:700}
+  .linkrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+  .linkrow .name{flex:1;font-weight:600}
+  .linkrow input{font-size:12px;padding:6px 8px}
+  .edit{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
+  .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  @media (max-width:640px){ .hide-m{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <img src="loga/web/VLA.png" alt="">
+  <h1>Admin · O putovní pohár</h1>
+  <span class="who" id="who"></span>
+  <button id="logout" hidden>Odhlásit</button>
+</header>
+<main id="app"><div class="card narrow">Načítání…</div></main>
+
+<script type="module">
+const app = document.getElementById('app');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const czk = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Kč`;
+const fmt = (iso) => iso ? new Date(iso).toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem('pp_admin') || 'null'); } catch { return null; } },
+  set(v) { try { v ? localStorage.setItem('pp_admin', JSON.stringify(v)) : localStorage.removeItem('pp_admin'); } catch {} },
+};
+let api = '';
+let auth = store.get();
+let price = 170;
+let flash = null;
+let generated = null; // [{key,label,token}] – jen v paměti, po obnovení stránky zmizí
+
+async function call(method, path, body) {
+  const headers = {};
+  if (body) headers['Content-Type'] = 'application/json';
+  if (auth?.session) headers.Authorization = `Bearer ${auth.session}`;
+  let res;
+  try { res = await fetch(api + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+  catch { throw new Error('Nepodařilo se spojit se serverem.'); }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && auth) { auth = null; store.set(null); flash = { t: 'warn', m: data.error || 'Přihlášení vypršelo.' }; renderLogin(); throw Object.assign(new Error(''), { silent: true }); }
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Něco se nepovedlo.'), { status: res.status, data });
+  return data;
+}
+
+const banner = () => { const f = flash; flash = null; return f ? `<div class="banner ${f.t}">${esc(f.m)}</div>` : ''; };
+const setHeader = () => {
+  document.getElementById('who').textContent = auth?.email || '';
+  document.getElementById('logout').hidden = !auth;
+};
+document.getElementById('logout').onclick = async () => {
+  await call('POST', '/api/auth/logout').catch(() => {});
+  auth = null; store.set(null); flash = { t: 'ok', m: 'Odhlášeno.' }; renderLogin();
+};
+
+function form(id, onsubmit) {
+  const f = document.getElementById(id);
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+    try { await onsubmit(Object.fromEntries(new FormData(f))); }
+    catch (err) { if (!err.silent) { flash = { t: 'err', m: err.message }; btn.disabled = false; f.dispatchEvent(new Event('rerender')); } }
+  };
+}
+
+// ---------- přihlášení, registrace, obnova hesla ----------
+function renderLogin() {
+  setHeader();
+  app.innerHTML = `<div class="narrow">${banner()}<form class="card" id="f"><h2>Přihlášení správce</h2>
+    <label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="username" required>
+    <label for="password">Heslo</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="btn block" type="submit">Přihlásit</button>
+    <p class="muted" style="margin-bottom:0"><button type="button" class="link" id="forgot">Zapomenuté heslo</button> ·
+    <button type="button" class="link" id="signup">První přihlášení – založit účet pořadatele</button></p></form></div>`;
+  document.getElementById('forgot').onclick = renderForgot;
+  document.getElementById('signup').onclick = renderSignup;
+  document.getElementById('f').addEventListener('rerender', renderLogin);
+  form('f', async (v) => {
+    auth = await call('POST', '/api/auth/login', { email: v.email, password: v.password });
+    store.set(auth); renderAdmin();
+  });
+}
+function renderSignup() {
+  app.innerHTML = `<div class="narrow">${banner()}<form class="card" id="f"><h2>Založit účet pořadatele</h2>
+    <p class="muted">Jen jednou a jen pro e-mail pořadatele. Po založení účtu ho Claude přiřadí jako správce.</p>
+    <label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="username" value="marek.fikejs@gmail.com" required>
+    <label for="password">Nové heslo (aspoň 10 znaků)</label><input id="password" name="password" type="password" minlength="10" autocomplete="new-password" required>
+    <label for="password2">Heslo znovu</label><input id="password2" name="password2" type="password" minlength="10" autocomplete="new-password" required>
+    <button class="btn block" type="submit">Založit účet</button>
+    <p class="muted"><button type="button" class="link" id="back">Zpět na přihlášení</button></p></form></div>`;
+  document.getElementById('back').onclick = renderLogin;
+  document.getElementById('f').addEventListener('rerender', renderSignup);
+  form('f', async (v) => {
+    if (v.password !== v.password2) throw new Error('Hesla se neshodují.');
+    await call('POST', '/api/auth/signup-owner', { email: v.email, password: v.password });
+    flash = { t: 'ok', m: 'Účet je založený. Napiš Claudovi, ať tě přiřadí jako správce – pak se přihlas.' };
+    renderLogin();
+  });
+}
+function renderForgot() {
+  app.innerHTML = `<div class="narrow">${banner()}<form class="card" id="f"><h2>Obnova hesla</h2>
+    <label for="email">E-mail</label><input id="email" name="email" type="email" autocomplete="username" required>
+    <button class="btn block" type="submit">Poslat odkaz pro obnovu</button>
+    <p class="muted"><button type="button" class="link" id="back">Zpět na přihlášení</button></p></form></div>`;
+  document.getElementById('back').onclick = renderLogin;
+  document.getElementById('f').addEventListener('rerender', renderForgot);
+  form('f', async (v) => {
+    await call('POST', '/api/auth/password-reset/request', { email: v.email });
+    flash = { t: 'ok', m: 'Pokud účet existuje, přišel na e-mail odkaz pro nastavení nového hesla (odesílatel auth@mail.myneon.app).' };
+    renderLogin();
+  });
+}
+function renderReset(token) {
+  app.innerHTML = `<div class="narrow">${banner()}<form class="card" id="f"><h2>Nové heslo</h2>
+    <label for="password">Nové heslo (aspoň 10 znaků)</label><input id="password" name="password" type="password" minlength="10" autocomplete="new-password" required>
+    <label for="password2">Heslo znovu</label><input id="password2" name="password2" type="password" minlength="10" autocomplete="new-password" required>
+    <button class="btn block" type="submit">Uložit heslo</button></form></div>`;
+  document.getElementById('f').addEventListener('rerender', () => renderReset(token));
+  form('f', async (v) => {
+    if (v.password !== v.password2) throw new Error('Hesla se neshodují.');
+    await call('POST', '/api/auth/password-reset', { token, password: v.password });
+    history.replaceState(null, '', location.pathname);
+    flash = { t: 'ok', m: 'Heslo je změněné. Přihlas se.' }; renderLogin();
+  });
+}
+
+// ---------- admin: obědy ----------
+const teamLink = (token) => `${location.origin}${location.pathname.replace(/admin\.html$/, '')}obedy.html#t=${token}`;
+
+async function renderAdmin() {
+  setHeader();
+  app.innerHTML = `<div class="card">Načítání objednávek…</div>`;
+  let rows;
+  try { rows = (await call('GET', '/api/admin/orders')).orders; }
+  catch (err) { if (!err.silent) { app.innerHTML = `<div class="banner err">${esc(err.message)}</div>`; } return; }
+  const ordered = rows.filter((r) => r.players !== null);
+  const sumP = ordered.reduce((a, r) => a + r.players, 0);
+  const sumS = ordered.reduce((a, r) => a + r.staff, 0);
+  app.innerHTML = `${banner()}
+    <div class="tabs"><button class="on">Obědy</button></div>
+    <section class="card"><h2>Objednávky obědů</h2>
+      <div class="muted">Uzávěrka pro týmy 12. 12. 2026 ve 24:00. Ty můžeš měnit kdykoli – každá změna jde do historie a odejde nové potvrzení.</div>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Tým</th><th class="num">Hráči</th><th class="num">RT</th><th class="num">Cena</th><th class="hide-m">Poznámka</th><th class="hide-m">E-mail</th><th>Stav</th><th></th></tr></thead>
+        <tbody>${rows.map((r) => {
+          const done = r.players !== null;
+          return `<tr data-key="${esc(r.key)}">
+            <td><b>${esc(r.label)}</b><div class="muted">${r.link_created ? `odkaz ${r.link_used ? 'použit ' + fmt(r.link_used) : 'vydán ' + fmt(r.link_created)}` : 'bez odkazu'}</div></td>
+            <td class="num">${done ? r.players : '—'}</td><td class="num">${done ? r.staff : '—'}</td>
+            <td class="num">${done ? czk((r.players + r.staff) * price) : '—'}</td>
+            <td class="hide-m">${esc(r.note) || ''}</td><td class="hide-m">${esc(r.email) || ''}</td>
+            <td>${done ? `<span class="pill ok">v${r.version}</span><div class="muted">${fmt(r.updated_at)}</div>` : '<span class="pill no">neobjednáno</span>'}</td>
+            <td><button class="btn small secondary" data-edit="${esc(r.key)}">${done ? 'Upravit' : 'Zadat'}</button></td></tr>
+            <tr hidden data-editrow="${esc(r.key)}"><td colspan="8"></td></tr>`;
+        }).join('')}</tbody></table></div>
+      <div class="totals"><span>Objednáno ${ordered.length}/9</span><span>Hráči ${sumP}</span><span>RT ${sumS}</span><span>Porcí ${sumP + sumS}</span><span>Celkem ${czk((sumP + sumS) * price)}</span></div>
+    </section>
+    <section class="card"><h2>Odkazy pro týmy</h2>
+      <div class="muted">Každý tým dostane vlastní odkaz. Vygenerováním nových odkazů přestanou platit staré. Odkazy se zobrazí jen teď – po obnovení stránky už je neuvidíš (lze vygenerovat znovu).</div>
+      <div id="links">${generated ? linksHtml() : ''}</div>
+      <button class="btn" id="gen" style="margin-top:12px">${generated ? 'Vygenerovat znovu všechny' : 'Vygenerovat odkazy pro všech 9 týmů'}</button>
+    </section>`;
+  app.querySelectorAll('[data-edit]').forEach((b) => b.onclick = () => openEdit(rows.find((r) => r.key === b.dataset.edit)));
+  document.getElementById('gen').onclick = async (e) => {
+    if (!confirm('Vygenerovat nové odkazy? Dosavadní odkazy týmů přestanou platit.')) return;
+    e.target.disabled = true;
+    try { generated = (await call('POST', '/api/admin/order-links', {})).links; renderAdmin(); }
+    catch (err) { if (!err.silent) { flash = { t: 'err', m: err.message }; renderAdmin(); } }
+  };
+  wireLinks();
+}
+
+function linksHtml() {
+  return generated.map((l) => `<div class="linkrow"><span class="name">${esc(l.label)}</span>
+    <input readonly value="${esc(teamLink(l.token))}" aria-label="Odkaz ${esc(l.label)}">
+    <button class="btn small" data-copy="${esc(l.key)}">Kopírovat</button>
+    ${navigator.share ? `<button class="btn small secondary" data-share="${esc(l.key)}">Sdílet</button>` : ''}
+    <button class="btn small secondary" data-regen="${esc(l.key)}" title="Zneplatnit a vydat nový">Nový</button></div>`).join('');
+}
+function wireLinks() {
+  const find = (k) => generated.find((l) => l.key === k);
+  app.querySelectorAll('[data-copy]').forEach((b) => b.onclick = async () => {
+    const l = find(b.dataset.copy);
+    try { await navigator.clipboard.writeText(teamLink(l.token)); b.textContent = 'Zkopírováno'; }
+    catch { b.previousElementSibling.select(); document.execCommand('copy'); b.textContent = 'Zkopírováno'; }
+  });
+  app.querySelectorAll('[data-share]').forEach((b) => b.onclick = () => {
+    const l = find(b.dataset.share);
+    navigator.share({ title: 'Objednávka obědů – O putovní pohár', text: `Objednávka obědů pro ${l.label} (do 12. 12. 2026):`, url: teamLink(l.token) }).catch(() => {});
+  });
+  app.querySelectorAll('[data-regen]').forEach((b) => b.onclick = async () => {
+    if (!confirm('Zneplatnit odkaz tohoto týmu a vydat nový?')) return;
+    try {
+      const [fresh] = (await call('POST', '/api/admin/order-links', { keys: [b.dataset.regen] })).links;
+      generated = generated.map((l) => l.key === fresh.key ? fresh : l); renderAdmin();
+    } catch (err) { if (!err.silent) alert(err.message); }
+  });
+}
+
+function openEdit(r) {
+  const row = app.querySelector(`[data-editrow="${r.key}"]`);
+  row.hidden = false;
+  row.firstElementChild.innerHTML = `<form id="e-${r.key}"><div class="edit">
+    <div><label>Hráči</label><input name="players" inputmode="numeric" value="${r.players ?? 0}"></div>
+    <div><label>Realizační tým</label><input name="staff" inputmode="numeric" value="${r.staff ?? 0}"></div></div>
+    <label>Poznámka (max. 100 znaků)</label><input name="note" maxlength="100" value="${esc(r.note || '')}">
+    <label>E-mail pro potvrzení</label><input name="email" type="email" value="${esc(r.email || '')}">
+    <div style="margin-top:10px;display:flex;gap:8px"><button class="btn" type="submit">Uložit a poslat potvrzení</button>
+    <button class="btn secondary" type="button" data-cancel>Zrušit</button></div><div class="muted" data-msg></div></form>`;
+  const f = row.querySelector('form');
+  f.querySelector('[data-cancel]').onclick = () => { row.hidden = true; };
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const v = Object.fromEntries(new FormData(f));
+    try {
+      await call('PUT', `/api/admin/orders/${r.key}`, { players: v.players, staff: v.staff, note: v.note, email: v.email, version: r.version ?? null });
+      flash = { t: 'ok', m: `Objednávka ${r.label} uložena.` }; renderAdmin();
+    } catch (err) {
+      if (err.silent) return;
+      const fields = err.data?.fields ? ' ' + Object.values(err.data.fields).join(' ') : '';
+      f.querySelector('[data-msg]').innerHTML = `<span style="color:var(--err)">${esc(err.message + fields)}</span>`;
+    }
+  };
+}
+
+// ---------- start ----------
+try {
+  const c = await fetch('config.json', { cache: 'no-store' }).then((r) => r.json());
+  api = c.apiBase || '';
+} catch {}
+const resetToken = new URLSearchParams(location.search).get('token');
+if (resetToken) renderReset(resetToken);
+else if (auth) renderAdmin();
+else renderLogin();
+</script>
+</body>
+</html>
