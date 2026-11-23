@@ -92,6 +92,24 @@ async function orderRateLimit(request, env) {
   if (!success) throw new ApiError(429, 'Příliš mnoho pokusů. Zkus to prosím za minutu znovu.');
 }
 
+/** Druhá brzda (spolehlivá): víc než 20 neplatných kódů z jedné IP za 10 minut → 429 na 10 minut. */
+const ipHash = async (request) => (await hashToken(`ip:${request.headers.get('CF-Connecting-IP') || 'unknown'}`)).slice(0, 32);
+async function orderFailGuard(request, env) {
+  const [r] = await db(env)(`SELECT count(*)::int AS n FROM order_fail WHERE ip_hash = $1 AND at > now() - interval '10 minutes'`, [await ipHash(request)]);
+  if (r.n >= 20) throw new ApiError(429, 'Příliš mnoho neplatných pokusů. Zkus to prosím za 10 minut znovu.');
+}
+async function withOrderFailLog(request, env, ctx, fn) {
+  await orderFailGuard(request, env);
+  try { return await fn(); }
+  catch (e) {
+    if (e instanceof ApiError && e.status === 404) {
+      const h = await ipHash(request);
+      ctx.waitUntil(db(env)(`INSERT INTO order_fail (ip_hash) VALUES ($1)`, [h]).catch(() => {}));
+    }
+    throw e;
+  }
+}
+
 async function orderTokenHash(request, env) {
   await orderRateLimit(request, env);
   const token = normalizeToken(request.headers.get('X-Order-Token'));
@@ -107,7 +125,8 @@ async function publicModel(request, env) {
   const body = JSON.stringify(model);
   const etag = `"${model.revision}-${(await sha1(body)).slice(0, 16)}"`;
   const headers = { ETag: etag, 'X-Revision': String(model.revision), 'X-Server-Time': String(Date.now()), 'Cache-Control': 'no-cache' };
-  if (request.headers.get('If-None-Match') === etag) {
+  const inm = (request.headers.get('If-None-Match') || '').split(',').map((s) => s.trim().replace(/^W\//, ''));
+  if (inm.includes(etag)) {
     return new Response(null, { status: 304, headers: { ...SECURITY_HEADERS, ...corsHeaders(request, env), ...headers } });
   }
   return new Response(body, {
@@ -167,6 +186,7 @@ async function runMail(env, ctx) {
   try {
     await withClient(env, ctx, async (q) => {
       await maybeQueueSummary(q, env);
+      await q(`DELETE FROM order_fail WHERE at < now() - interval '1 day'`);
       if (!env.GOOGLE_CLIENT_ID || !env.TOKEN_ENCRYPTION_KEY) return;
       const [acc] = await q(`SELECT 1 FROM oauth_account WHERE provider = 'google'`);
       if (!acc) return;
@@ -230,15 +250,19 @@ export default {
       }
       // --- objednávka týmu (token v hlavičce, ne v URL) ---
       if (url.pathname === '/api/order' && request.method === 'GET') {
-        const h = await orderTokenHash(request, env);
-        const view = await withClient(env, ctx, (q) => teamOrderView(q, h, new Date().toISOString()));
+        const view = await withOrderFailLog(request, env, ctx, async () => {
+          const h = await orderTokenHash(request, env);
+          return withClient(env, ctx, (q) => teamOrderView(q, h, new Date().toISOString()));
+        });
         return json(request, env, 200, view, { 'Cache-Control': 'no-store' });
       }
       if (url.pathname === '/api/order' && request.method === 'POST') {
-        const h = await orderTokenHash(request, env);
         const body = await readJson(request);
         const idem = request.headers.get('Idempotency-Key');
-        const res = await withClient(env, ctx, (q) => submitTeamOrder(q, h, body, idem, new Date().toISOString()));
+        const res = await withOrderFailLog(request, env, ctx, async () => {
+          const h = await orderTokenHash(request, env);
+          return withClient(env, ctx, (q) => submitTeamOrder(q, h, body, idem, new Date().toISOString()));
+        });
         ctx.waitUntil(runMail(env, ctx));
         return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
       }

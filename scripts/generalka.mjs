@@ -33,7 +33,7 @@ ok('API běží (test)', health.ok, `revize ${health.revision}`);
 
 // ---------- 1) vyčištění testovacích dat ----------
 await q('BEGIN');
-for (const t of ['shootout', 'period', 'lot', 'lunch_order_history', 'lunch_order', 'request_key', 'team_access', 'mail_outbox', 'parent_tip', 'report_pdf', 'propozice_pdf']) await q(`DELETE FROM ${t}`);
+for (const t of ['order_fail', 'shootout', 'period', 'lot', 'lunch_order_history', 'lunch_order', 'request_key', 'team_access', 'mail_outbox', 'parent_tip', 'report_pdf', 'propozice_pdf']) await q(`DELETE FROM ${t}`);
 await q(`UPDATE tournament SET manual_order = NULL, lunch_price_player_czk = 140, lunch_price_staff_czk = 150, lunch_deadline = '2026-12-13T00:00:00+01:00', revision = revision + 1`);
 await q('COMMIT');
 ok('Testovací data vyčištěna (Gmail a správce ponechány)', true);
@@ -128,7 +128,7 @@ const PM = await pub.json();
 const etag = pub.headers.get('etag');
 ok('Veřejný model přes API ukazuje dohraný turnaj', PM.finalDone === true && PM.matches.every((m) => m.periods.length === 2), `revize ${PM.revision}`);
 ok('Veřejný model neobsahuje e-maily', !JSON.stringify(PM).includes('@'));
-const p304 = await fetch(`${API}/api/public`, { headers: { 'If-None-Match': etag } });
+const p304 = await fetch(`${API}/api/public`, { headers: { 'If-None-Match': `W/${etag.replace(/^W\//, '')}` } });
 ok('Obnova bez změny → 304', p304.status === 304);
 const rep = await fetch(`${API}/api/report.pdf`);
 const repBytes = new Uint8Array(await rep.arrayBuffer());
@@ -226,8 +226,9 @@ ok('Zkušební souhrn čeká na automatické odeslání serverem', waiting.lengt
 
 // limit pokusů o hádání kódů (na konci, aby nebrzdil ostatní kontroly)
 let limited = 0;
-for (let i = 0; i < 40; i++) { const r = await order('zzzzzz'); if (r.status === 429) limited++; }
-ok('Hádání kódů brzdí limit pokusů (HTTP 429)', limited > 0, `${limited}× 429 ze 40`);
+for (let i = 0; i < 30; i++) { const r = await order('zzzzzz'); if (r.status === 429) limited++; await sleep(150); }
+ok('Hádání kódů brzdí limit pokusů (HTTP 429)', limited > 0, `${limited}× 429 ze 30`);
+await q(`DELETE FROM order_fail`);
 
 await client.end();
 const passed = results.filter((r) => r.pass).length;

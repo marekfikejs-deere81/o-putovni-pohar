@@ -180,7 +180,11 @@ export async function renderSchedule(app, ctx, head) {
   app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
   try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   const rng = (a, b) => `${toHHMM(a)}–${toHHMM(b)}`;
-  app.innerHTML = `${ctx.head()}<section class="card"><h2>Úprava rozpisu</h2>
+  app.innerHTML = `${ctx.head()}<section class="card"><h2>Časový rozpis ke stažení</h2>
+    <div class="muted">Vytvoří aktuální rozpis (časy i dvojice podle aplikace) na stránku A4 – k tisku, na nástěnku nebo k rozeslání týmům.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="rz-jpg">Stáhnout JPEG</button><button class="btn" id="rz-pdf">Stáhnout PDF</button><button class="btn secondary" id="rz-show">Náhled</button></div>
+    <div id="rz-prev" style="margin-top:10px"></div></section>
+    <section class="card"><h2>Úprava rozpisu</h2>
     <div class="muted">Posuň začátek budoucího bloku, nebo prodluž právě probíhající. Všechny další bloky a navázané obědy se posunou o stejný rozdíl. Proběhlé bloky a zahájené obědy zůstanou.</div>
     <form id="sf" style="margin-top:10px">
       <label>Blok</label><select name="blockId">${M.blocks.map((b) => `<option value="${b.id}">${rng(b.from, b.to)} · ${esc(b.games.length ? b.games.map((id) => { const m = M.matches.find((x) => x.id === id); return `${team(m.home)?.code ?? m.homeSeed}×${team(m.away)?.code ?? m.awaySeed}`; }).join(', ') : b.title)}</option>`).join('')}</select>
@@ -193,6 +197,20 @@ export async function renderSchedule(app, ctx, head) {
       ${shiftPreview.lunches.length ? `<table><thead><tr><th>Oběd</th><th>Původně</th><th>Nově</th></tr></thead><tbody>${shiftPreview.lunches.map((l) => `<tr><td>${l.teams.map((t) => esc(team(t).code)).join(' + ')}</td><td>${rng(l.from[0], l.to[0])}</td><td><b>${l.freezeNow ? 'beze změny (už začal)' : rng(l.from[1], l.to[1])}</b></td></tr>`).join('')}</tbody></table>` : ''}
       <button class="btn" id="applyShift">Potvrdit posun</button> <button class="btn secondary" id="cancelShift">Zrušit</button></div>` : ''}
     </section>`;
+  const rz = async (kind, btn) => {
+    const label = btn.textContent; btn.disabled = true; btn.textContent = 'Vytvářím…';
+    try {
+      const { scheduleFiles, download } = await import('./rozpis-export.js');
+      const f = await scheduleFiles(M, '');
+      if (kind === 'jpg') download(f.jpg, 'rozpis-o-putovni-pohar-2026.jpg');
+      else if (kind === 'pdf') download(f.pdf, 'rozpis-o-putovni-pohar-2026.pdf');
+      else { const img = new Image(); img.src = URL.createObjectURL(f.jpg); img.alt = 'Náhled rozpisu'; img.style.cssText = 'width:100%;border:1px solid var(--line);border-radius:8px'; const p = document.getElementById('rz-prev'); p.innerHTML = ''; p.append(img); }
+    } catch (e) { alert('Rozpis se nepodařilo vytvořit: ' + e.message); }
+    btn.disabled = false; btn.textContent = label;
+  };
+  document.getElementById('rz-jpg').onclick = (e) => rz('jpg', e.target);
+  document.getElementById('rz-pdf').onclick = (e) => rz('pdf', e.target);
+  document.getElementById('rz-show').onclick = (e) => rz('show', e.target);
   const f = document.getElementById('sf');
   if (shiftPreview) { f.blockId.value = String(shiftPreview.blockId); f.mode.value = shiftPreview.mode; f.minutes.value = String(shiftPreview.minutes); }
   f.onsubmit = async (e) => {

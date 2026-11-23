@@ -10,6 +10,9 @@ for (const [src, dst] of [['web', '.'], ['shared', 'shared'], ['data', 'data'], 
   cpSync(src, `${out}/${dst}`, { recursive: true });
 }
 
+// Písmo pro export rozpisu (stejné jako v PDF zápisu).
+cpSync('worker/fonts', `${out}/fonts`, { recursive: true });
+
 // Veřejná konfigurace (jen veřejné URL, nikdy tajemství).
 // Do ostrého spuštění míří web na testovací API; při přepnutí stačí změnit DEFAULT_API.
 const DEFAULT_API = 'https://o-putovni-pohar-api-test.marek-fikejs.workers.dev';
