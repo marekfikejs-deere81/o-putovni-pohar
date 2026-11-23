@@ -27,7 +27,7 @@ function corsHeaders(request, env) {
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type, If-None-Match, Idempotency-Key, X-Order-Token',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Expose-Headers': 'ETag, X-Revision',
+    'Access-Control-Expose-Headers': 'ETag, X-Revision, X-Server-Time',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
@@ -93,7 +93,7 @@ async function publicModel(request, env) {
   const model = buildPublicModel(raw);
   const body = JSON.stringify(model);
   const etag = `"${model.revision}-${(await sha1(body)).slice(0, 16)}"`;
-  const headers = { ETag: etag, 'X-Revision': String(model.revision), 'Cache-Control': 'no-cache' };
+  const headers = { ETag: etag, 'X-Revision': String(model.revision), 'X-Server-Time': String(Date.now()), 'Cache-Control': 'no-cache' };
   if (request.headers.get('If-None-Match') === etag) {
     return new Response(null, { status: 304, headers: { ...SECURITY_HEADERS, ...corsHeaders(request, env), ...headers } });
   }

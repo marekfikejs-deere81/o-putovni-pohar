@@ -1,27 +1,211 @@
-<!doctype html>
-<html lang="cs">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stadion · HC Rytíři Vlašim</title>
+<!doctype html><html lang="cs"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stadion · O putovní pohár</title><meta name="robots" content="noindex"><link rel="icon" href="loga/web/VLA.png">
 <style>
-  html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,sans-serif}
-  body{display:grid;place-items:center;text-align:center}
-  h1{font-size:min(8vh,6vw);margin:0}
-  p{font-size:min(4vh,3vw);opacity:.75}
-  time{display:block;font-size:min(12vh,9vw);font-weight:900;font-variant-numeric:tabular-nums;color:#6bff91}
-</style>
-</head>
-<body>
-<div>
-  <h1>O putovní pohár</h1>
-  <time id="clock"></time>
-  <p>Stadionová obrazovka se připravuje · Vlašim · 28. prosince 2026</p>
-</div>
-<script>
-  const fmt = new Intl.DateTimeFormat('cs-CZ', { timeZone: 'Europe/Prague', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const tick = () => { document.getElementById('clock').textContent = fmt.format(new Date()); };
-  tick(); setInterval(tick, 500);
-</script>
-</body>
-</html>
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,sans-serif;font-variant-numeric:tabular-nums}body{display:grid;grid-template-rows:10% 1fr 20%;overflow:hidden}
+header,footer,main{min-height:0}header{display:flex;align-items:center;justify-content:space-between;padding:0 3vw;background:#000;border-bottom:.35vh solid #63c7ff;font-size:min(3.2vh,2.5vw);font-weight:750}header time{color:#6bff91;font-size:1.4em;font-weight:850}main{padding:1.3vh 2vw}
+.duel{display:grid;height:100%;grid-template-columns:1fr 1fr;gap:2vw}.rink{position:relative;min-width:0;display:grid;grid-template-rows:1fr auto 1fr;align-items:center;text-align:center;padding:0 1vw}.rink+.rink{border-left:.2vw solid #888}.side{display:grid;justify-items:center;align-content:center;gap:.5vh;font-size:min(5vh,3.35vw);font-weight:850;line-height:1.05}.side img{object-fit:contain;width:17vw;height:15vh;display:block}.score{font-size:5.4vh;line-height:1;font-weight:800}.result,.place{position:absolute;top:0;font-size:min(3vh,2vw);font-weight:750}.result{right:0}.place{left:1vw;color:#ffcf62}.idle{grid-row:2;font-size:5vh}.next{text-align:center}
+footer{background:#000;border-top:.45vh solid #62caff;padding:1vh 3vw;display:flex;flex-direction:column;justify-content:center;font-size:min(3.5vh,2.6vw);font-weight:700;line-height:1.19}footer strong,.kicker{color:#80dcff}footer strong{font-size:.85em;letter-spacing:.04em}.next{display:grid;grid-template-columns:1fr 1fr;gap:3vw}.next div{min-width:0}footer b{color:#95d8ff}.signal{color:#ffce6c;font-size:.75em}
+.center{height:100%;display:grid;align-content:center;text-align:center;gap:2vh}.center h1{font-size:min(9vh,7vw);margin:0}.center p{font-size:min(5vh,4vw);margin:0}
+.sheet{height:100%;display:flex;flex-direction:column}.sheet h1{margin:0 0 1vh;font-size:min(4.6vh,3.5vw)}table{flex:1;width:100%;border-collapse:collapse;table-layout:fixed;font-weight:700;font-size:min(3.25vh,2.6vw)}th,td{padding:.18vh .42vw;text-align:center;border-bottom:1px solid #526271}th{background:#000}th:first-child{text-align:left}.matrix th:first-child{width:24%}.matrix th img{height:4.3vh;width:4.3vh;object-fit:contain;background:white}.matrix th span{font-size:.76em}.matrix td{background:#000}.matrix td.self{background:#181818;color:#8fadc0}.period{display:block;line-height:1.04}.period+.period{border-top:1px solid #405463}.period small{color:#a8dfff;font-size:.75em}.ranking th:nth-child(2){width:42%;text-align:left}.ranking td:nth-child(2){text-align:left}.ranking th:first-child{width:9%;text-align:center}
+#full{position:fixed;right:1vw;bottom:1vh;font:600 14px system-ui;padding:8px;color:white;background:#23405a;border:1px solid #7796ab;border-radius:5px}body.quiet #full,body:fullscreen #full{opacity:0;pointer-events:none}#full:focus-visible{opacity:1!important}
+.rink h2{text-transform:uppercase;font-weight:900;line-height:1.05}.rink h2 small{text-transform:none;margin-top:.45vh}.rink+.rink h2,.next div:nth-child(2) b{color:#ffcf62}.kicker{font-size:min(3.5vh,2.8vw)}footer strong{color:#ffcf62;font-weight:850;text-transform:uppercase}footer{border-top-color:#ffcf62}.ranking th,.matrix thead th{color:white}header time::before{content:"Čas ";font-size:.65em;color:white}
+.mark{display:inline-flex;align-items:center;justify-content:center;gap:.25em;vertical-align:middle}.mark img,.matrix th .mark img{width:8vh;height:7.3vh;object-fit:contain;background:transparent}.next .mark img{height:9vh;width:10vh}.matrix th:first-child,.ranking th:nth-child(2){width:18%}.sheet th:first-child,.ranking td:nth-child(2),.ranking th:nth-child(2){text-align:center}.matrix th .mark{font-size:1em}
+body.match{grid-template-rows:6vh minmax(0,1fr) 21vh}
+.match header{position:relative;justify-content:center;border:0}
+.match #head,.match time::before{display:none}
+.match #signal{position:absolute;left:2vw}
+.match time{font-size:5vh;color:white;line-height:1}
+.match main{padding:.4vh 1vw}
+.match .duel{gap:0}
+.match .rink{grid-template-rows:auto auto auto;align-content:center;gap:.3vh}
+.match .side{gap:.2vh;font-size:min(5.3vh,3.45vw);line-height:1.04}
+.match .side img{height:23vh;width:24vw}
+.match .score{font-size:5vh}
+.match footer{padding:.5vh 1vw;line-height:1.08;text-align:center;font-size:min(5vh,3.2vw);gap:.5vh}
+.match footer strong{font-size:min(5.4vh,3.5vw)}
+.match .next{gap:1vw}
+.ready{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;width:100%;text-align:center;gap:1vw}.pair{display:flex;align-items:center;justify-content:center;gap:1vw;font-size:min(4.8vh,3vw);font-weight:800}.pair .mark img{width:min(12vw,14vh);height:13vh}.start{display:grid;justify-items:center;line-height:1.05}.ready .start strong{font-size:min(3.7vh,3vw);color:#ffcf62}.start time{font-size:min(7vh,6vw);font-weight:900;color:white}.start>span{font-size:min(4.4vh,3.7vw);font-weight:800;color:white}
+.sheet td{position:relative}.digits{position:absolute;inset:2% 2.5%;display:grid;align-items:center;text-align:center}.digits{container-type:size}.digits b{line-height:1;font-weight:800;font-size:var(--rank-font,min(100cqh,var(--width)));white-space:nowrap}.matrix .scores{display:block;position:absolute;top:3%;left:3%;width:94%;height:94%;overflow:hidden}.scores text{fill:#fff;font:800 100px system-ui,sans-serif;text-anchor:middle}
+
+
+.legend,.cross .sheet h1{display:none}.cross .legend{display:flex;align-items:center;gap:.55vw;font-size:min(3.1vh,2.2vw)}.legend i{width:1em;height:1em;border-radius:.14em;margin-left:.6vw}.win{background:#14853c}.loss{background:#b22424}.draw{background:#494949}.cross #head{font-size:min(5.4vh,3.4vw)}.cross header{padding:0 2.4vw}.cross header time{font-size:min(6vh,4vw)}.cross main{padding:.4vh 2vw 3vh}.cross .matrix{height:100%;border-collapse:separate;border-spacing:.65vw .8vh}.cross .matrix th,.cross .matrix td{border:0;padding:0}.cross .matrix th:first-child{width:13%;text-align:left}.cross .matrix th{font-size:min(5.1vh,3.4vw)}.cross .matrix th .teamcode{font-size:inherit}.matrix .teamcode::before{content:"";display:inline-block;width:.28em;height:.92em;margin-right:.24em;background:var(--team);vertical-align:-.04em;border-radius:.06em}.matrix tr:first-child{height:10%}.matrix .self{border-radius:.7vh}.tiles{position:absolute;inset:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5vw}.tile{position:relative;border-radius:.65vh;overflow:hidden;display:grid;place-items:center}.tile.empty{background:#151515;color:#aaa}.tile svg{position:absolute;inset:4%;width:92%;height:92%}.tile text{fill:white;font:800 100px system-ui,sans-serif;text-anchor:middle}.cross footer .teamcode{color:var(--team);font-weight:850}
+body.cross{display:block}.cross main{height:100%;width:100%;padding:0}.cross main>svg{display:block;width:100%;height:100%}.cross footer,.cross header{display:none}.cross header:has(#signal:not(:empty)){display:block;position:absolute;top:0;z-index:1}.cross header #head,.cross header .legend,.cross header time{display:none}
+</style><header><span id="head">HC Rytíři Vlašim</span><span class="legend"><i class="win"></i> výhra <i class="draw"></i> remíza <i class="loss"></i> prohra</span><span class="signal" id="signal"></span><time id="clock"></time></header><main id="screen"><div class="center">Načítání rozpisu…</div></main><footer id="next"></footer><button id="full">Celá obrazovka</button><script type="module">
+// Stadionová obrazovka 1600×960. Vzhled z prototypu; data z /api/public (stejná revize jako mobilní web).
+// Opravy proti prototypu: žádné dodatečné odstraňování bílé ze znaků (dodaná stadionová PNG jsou schválená),
+// zkratky a barvy týmů z dat (ne natvrdo), obnova po 5 s, serverový čas pro synchronizaci.
+const DAY = '20261228';
+const demo = new URLSearchParams(location.search).get('ukazka'), sample = ['zapas', 'led', 'cislice', 'krizova', 'poradi'].includes(demo);
+let api = '', data = null, etag = '', offset = 0, version = 0, lastKey = '', loading = false, start = Date.now(), hideTimer;
+const el = (id) => document.getElementById(id), esc = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const time = (n) => String(Math.floor(n / 60)).padStart(2, '0') + ':' + String(Math.floor(n % 60)).padStart(2, '0');
+const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Prague', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+
+/** Převod veřejného modelu na tvar, se kterým pracuje vykreslování stadionu. */
+function toArena(M) {
+  const clubs = Object.fromEntries(M.teams.map((t) => [t.id, { name: t.name, img: t.logo.stadium, code: t.code, color: t.color }]));
+  const matches = [];
+  for (const m of M.matches) {
+    matches[m.id] = {
+      rink: m.rink, a: m.home ?? null, b: m.away ?? null,
+      seed: m.place ? Number(m.homeSeed[0]) : 0, place: m.place || 0, periods: m.periods, winner: m.winner,
+    };
+  }
+  const blocks = M.blocks.map((b, i) => ({ from: b.from, to: b.to, games: b.games, title: b.title, last: i === M.blocks.length - 1 }));
+  const tables = ['A', 'B'].map((g) => {
+    const ids = M.teams.filter((t) => t.group === g).sort((a, b) => a.slot - b.slot).map((t) => t.id);
+    const games = M.matches.filter((m) => m.place === null && ids.includes(m.home)).map((m) => m.id);
+    const rank = M.groups[g].rows.map((r) => ({ id: r.id, rank: r.rank, z: r.played, p: r.points, f: r.goalsFor, a: r.goalsAgainst }));
+    return { ids, games, rank, started: M.groups[g].started };
+  });
+  return { clubs, matches, blocks, tables };
+}
+
+function timer(now) {
+  const d = Object.fromEntries(fmt.formatToParts(new Date(now)).map((x) => [x.type, x.value]));
+  if (sample) { const b = data.blocks.find((e) => (demo !== 'zapas' ? (!e.games.length && !e.last) : e.games.length)); if (b) return { day: DAY, sec: b.from * 60 + Math.floor((Date.now() - start) / 1000) % ((b.to - b.from) * 60) }; }
+  const test = new URLSearchParams(location.search).get('cas'); // jen pro testování: ?cas=HH:MM
+  if (test && /^\d{1,2}:\d{2}$/.test(test)) { const [h, mi] = test.split(':').map(Number); return { day: DAY, sec: h * 3600 + mi * 60 + Math.floor((Date.now() - start) / 1000) }; }
+  return { day: d.year + d.month + d.day, sec: +d.hour * 3600 + (+d.minute) * 60 + (+d.second) };
+}
+const name = (m, side) => (m[side] === null ? m.seed + '. ze skupiny ' + (side === 'a' ? 'A' : 'B') : data.clubs[m[side]].name);
+function lane(e, r) { const k = e.games.find((i) => data.matches[i].rink === r); return k === undefined ? null : data.matches[k]; }
+function clubMark(id, placeholder = '?') {
+  const club = data.clubs[id];
+  if (!club?.img) return '<b>' + esc(placeholder) + '</b>';
+  const squad = club.name.match(/Vlašim\s+([AB])$/i);
+  return '<span class="mark"><img src="' + esc(club.img) + '" alt="' + esc(club.name) + '">' + (squad ? '<b>' + squad[1] + '</b>' : '') + '</span>';
+}
+const code = (id) => data.clubs[id]?.code || data.clubs[id]?.name.slice(0, 4) || '—';
+const color = (id) => data.clubs[id]?.color || '#fff';
+const isHome = (id) => /Vlašim/i.test(data.clubs[id]?.name || '');
+function codeMark(id, fallback) {
+  if (id == null) return esc(fallback);
+  return '<span class="teamcode" style="--team:' + esc(color(id)) + '" title="' + esc(data.clubs[id].name) + '">' + esc(code(id)) + '</span>';
+}
+function upcoming(b, minute, day, codes = false) {
+  if (!b) return '<strong>Turnaj zakončen</strong>';
+  if (!b.games.length) return '<strong>Následuje</strong><div>' + esc(b.title) + '</div>';
+  const pair = (r) => {
+    const m = lane(b, r);
+    if (!m) return '<div class="pair">Volno</div>';
+    const mark = (k) => (codes ? codeMark(m[k], name(m, k)) : clubMark(m[k], name(m, k)));
+    return '<div class="pair">' + mark('a') + '<span>×</span>' + mark('b') + '</div>';
+  };
+  const remaining = day === DAY ? 'Za ' + Math.max(0, Math.ceil(b.from - minute)) + ' min' : '28. prosince';
+  return '<div class="ready">' + pair('A') + '<div class="start"><strong>Připraví se</strong><time>' + time(b.from) + '</time><span>' + remaining + '</span></div>' + pair('B') + '</div>';
+}
+function rink(e, r) {
+  const m = lane(e, r);
+  if (!m) return '<article class="rink"><b class="idle">Volno</b></article>';
+  const side = (k) => { const img = data.clubs[m[k]]?.img; return '<div class="side">' + (img ? '<img src="' + esc(img) + '" alt="">' : '') + '<span>' + esc(name(m, k)) + '</span></div>'; };
+  const goals = m.periods.reduce(([a, b], [x, y]) => [a + x, b + y], [0, 0]);
+  const result = m.periods.length ? '<span class="result">' + goals.join(':') + ' po ' + m.periods.length + '. třetině</span>' : '';
+  return '<article class="rink">' + (m.place ? '<span class="place">O ' + m.place + '. místo</span>' : '') + result + side('a') + '<div class="score">×</div>' + side('b') + '</article>';
+}
+// Ukázková data (jen ?ukazka=…, nikdy se neukládají)
+const examplePeriods = [[[2, 1], [0, 0]], [[1, 3], [2, 2]], [[4, 1], [1, 2]], [[0, 2], [3, 1]], [[2, 2], [0, 1]], [[1, 0], [2, 4]], [[3, 2], [1, 1]], [[0, 3], [4, 2]], [[2, 0], [3, 1]], [[1, 2], [0, 0]]];
+const rankExample = [[{ id: 9, rank: 1, record: [8, 4, 2, 2], p: 10, f: 13, a: 12 }, { id: 0, rank: 2, record: [8, 3, 3, 2], p: 9, f: 10, a: 9 }, { id: 2, rank: 3, record: [8, 4, 1, 3], p: 9, f: 14, a: 10 }, { id: 3, rank: 4, record: [8, 3, 1, 4], p: 7, f: 14, a: 16 }, { id: 5, rank: 5, record: [8, 1, 3, 4], p: 5, f: 11, a: 15 }],
+  [{ id: 4, rank: 1, record: [8, 4, 3, 1], p: 11, f: 14, a: 11 }, { id: 6, rank: 2, record: [8, 4, 1, 3], p: 9, f: 14, a: 13 }, { id: 1, rank: 3, record: [8, 3, 2, 3], p: 8, f: 13, a: 11 }, { id: 8, rank: 4, record: [8, 3, 1, 4], p: 7, f: 13, a: 14 }, { id: 7, rank: 5, record: [8, 1, 3, 4], p: 5, f: 8, a: 13 }]];
+function periodRecord(table, id) {
+  let wins = 0, draws = 0, losses = 0;
+  for (const k of table.games) {
+    const m = data.matches[k];
+    if (m.a !== id && m.b !== id) continue;
+    for (const [a, b] of m.periods) { const diff = m.a === id ? a - b : b - a; if (diff > 0) wins++; else if (diff < 0) losses++; else draws++; }
+  }
+  return [wins + draws + losses, wins, draws, losses];
+}
+function stadiumPanel(group, next, minute, standings) {
+  const table = data.tables[group], ids = table.ids;
+  const rect = (x, y, w, h, fill, rx = 0) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" rx="${rx}"/>`;
+  const label = (x, y, value, size, col = '#fff', align = 'middle') => `<text x="${x}" y="${y}" font-size="${size}" fill="${col}" text-anchor="${align}">${esc(value)}</text>`;
+  const palette = ['#14863a', '#494949', '#af2222'];
+  const parts = ['<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="960" viewBox="0 0 1600 960" font-family="DejaVu Sans, Verdana, sans-serif" font-weight="bold" role="img" aria-label="' + (standings ? 'Pořadí' : 'Křížová') + ' tabulka skupiny ' + 'AB'[group] + '">', rect(0, 0, 1600, 960, 'black')];
+  parts.push(label(40, 73, (standings ? 'Pořadí' : 'Křížová') + ' · skupina ' + 'AB'[group], standings ? 56 : 53, 'white', 'start'), label(1360, 77, 'Čas', 39, 'white', 'end'), label(1560, 76, time(Math.floor(minute)), 62, '#65fa93', 'end'), rect(0, 106, 1600, 4, '#5cb5f8'));
+  if (standings) {
+    const sampleRank = demo === 'poradi' && rankExample[group];
+    const rows = sampleRank || table.rank;
+    const started = sampleRank || demo === 'cislice' || table.started;
+    const xs = [841, 948, 1055, 1162, 1332, 1524];
+    const grey = '#adb5c1';
+    parts.push(label(122, 164, 'Tým', 40, grey, 'start'));
+    ['Z', 'V', 'R', 'P', 'Skóre', 'B'].forEach((v, i) => parts.push(label(xs[i], 164, v, 40, grey)));
+    const height = 590 / rows.length;
+    rows.forEach((r, i) => {
+      const id = r.id, y = 185 + (i + 0.5) * height, base = y + 22;
+      const record = sampleRank ? r.record : periodRecord(table, id);
+      const stress = demo === 'cislice';
+      const vals = stress ? [8, 5, 2, 1, '55:55', 12] : started ? [...record, r.f + ':' + r.a, r.p] : [0, 0, 0, 0, '–', '–'];
+      const fullName = data.clubs[id]?.name || '—';
+      const nameSize = Math.min(56, Math.floor(620 / (Math.max(1, fullName.length) * 0.62)), height * 0.5);
+      parts.push(label(52, base, started ? (stress ? i + 1 : r.rank) + '.' : '–', 65, grey), rect(122, y - 35, 22, 70, color(id), 4), label(164, base, fullName, nameSize, isHome(id) ? '#96d4ff' : 'white', 'start'));
+      vals.forEach((v, j) => parts.push(label(xs[j], base, v, Math.min(j === 5 ? 70 : 64, height * 0.64, (j === 4 ? 205 : 91) / (String(v).length * 0.67)), j === 5 ? '#ffd268' : 'white')));
+      if (i < rows.length - 1) parts.push(rect(0, y + height / 2 - 2, 1600, 3, '#343434'));
+    });
+  } else {
+    [681, 840, 1016].forEach((x, i) => parts.push(rect(x, 36, 34, 34, palette[i], 6), label(x + 44, 66, ['výhra', 'remíza', 'prohra'][i], 30, 'white', 'start')));
+    const col = 1338 / ids.length, row = 540 / ids.length;
+    ids.forEach((id, i) => {
+      const x = 241 + (i + 0.5) * col - 12, cy = 194 + (i + 0.5) * row - 4;
+      parts.push(rect(x - 63, 131, 16, 52, color(id), 3), label(x - 32, 170, code(id), 46, 'white', 'start'), rect(48, cy - 26, 16, 52, color(id), 3), label(78, cy + 15, code(id), 53, isHome(id) ? '#96d4ff' : 'white', 'start'));
+      ids.forEach((opp, j) => {
+        const left = 241 + j * col, top = 194 + i * row, cw = col - 21, ch = row - 8;
+        if (id === opp) { parts.push(rect(left, top, cw, ch, '#161616', 8), label(left + cw / 2, cy + 13, '×', 47, '#464646')); return; }
+        const idx = table.games.findIndex((k) => { const m = data.matches[k]; return (m.a === id && m.b === opp) || (m.b === id && m.a === opp); });
+        const m = data.matches[table.games[idx]];
+        const periods = !m ? [] : ['krizova', 'poradi'].includes(demo) ? examplePeriods[(idx + 3 * group) % examplePeriods.length] : demo === 'cislice' ? [[55, 55], [55, 55]] : m.periods;
+        for (let k = 0; k < 2; k++) {
+          const h = periods[k], a = h?.[+(m?.b === id)], b = h?.[+(m?.a === id)], score = h ? a + ':' + b : '—', w = (cw - 14) / 2, x = left + 2 + k * (w + 10);
+          const font = Math.min(55, ch * 0.58, w / (score.length * 0.65));
+          parts.push(rect(x, top + 5, w, ch - 10, h ? palette[1 - Math.sign(a - b)] : '#161616', 7), label(x + w / 2, cy + font * 0.34, score, font));
+        }
+      });
+    });
+  }
+  parts.push(rect(0, 776, 1600, 4, '#edb54a'));
+  if (next?.games.length) {
+    parts.push(label(800, 821, 'PŘIPRAVÍ SE', 38, '#f1bd52'), label(800, 895, time(next.from), 74), label(800, 945, 'Za ' + Math.max(0, Math.ceil(next.from - minute)) + ' min', 41));
+    ['A', 'B'].forEach((r, i) => {
+      const m = lane(next, r), cx = i ? 1295 : 318;
+      if (!m) { parts.push(label(cx, 890, 'Volno', 48)); return; }
+      const team = (k) => (m[k] == null ? m.seed + (k === 'a' ? 'A' : 'B') : code(m[k]));
+      parts.push(label(cx - 54, 905, team('a'), 100, m.a == null ? '#fff' : color(m.a), 'end'), label(cx, 898, '×', 76, '#ccc'), label(cx + 54, 905, team('b'), 100, m.b == null ? '#fff' : color(m.b), 'start'));
+    });
+  } else if (next) parts.push(label(800, 875, next.title, 52));
+  return parts.join('') + '</svg>';
+}
+
+function tick() {
+  if (!data) return;
+  const { day, sec } = timer(Date.now() + offset), blocks = data.blocks, minute = sec / 60;
+  const i = day === DAY ? blocks.findIndex((b) => b.from <= minute && minute < b.to) : -1, b = blocks[i], after = day > DAY || (day === DAY && minute >= blocks.at(-1).to);
+  // Úprava ledu: 0–9 s křížová A, 10–19 křížová B, 20–29 pořadí A, 30–39 pořadí B (z uplynulého času bloku – refresh naváže)
+  const slide = b && !b.games.length && !b.last ? (Math.floor((sec - b.from * 60) / 10) + (['cislice', 'poradi'].includes(demo) ? 2 : 0)) % (demo === 'krizova' ? 2 : 4) : -1;
+  const isMatch = Boolean(b?.games.length);
+  document.body.classList.toggle('match', isMatch);
+  el('clock').textContent = time(Math.floor(minute)) + (isMatch ? ':' + String(sec % 60).padStart(2, '0') : '');
+  const key = [version, day, i, slide, Math.floor(minute)].join(':'); if (key === lastKey) return; lastKey = key;
+  let next = b ? blocks[i + 1] : after ? null : day < DAY ? blocks[0] : blocks.find((x) => x.from > minute);
+  let header = 'HC Rytíři Vlašim', html = '';
+  if (b?.games.length) { header = time(b.from) + '–' + time(b.to) + '  ·  Na ledě'; html = '<div class="duel">' + rink(b, 'A') + rink(b, 'B') + '</div>'; }
+  else if (slide >= 0) { header = time(b.from) + '–' + time(b.to) + '  ·  ' + b.title; next = blocks.slice(i + 1).find((x) => x.games.length) || next; html = stadiumPanel(slide % 2, next, minute, slide >= 2); }
+  else { const title = b?.title || (after ? 'Turnaj zakončen' : day < DAY ? 'O putovní pohár' : 'Přestávka'); html = '<div class="center"><h1>' + esc(title) + '</h1><p>' + (!after && !b ? 'Vlašim · 28. prosince 2026' : 'HC Rytíři Vlašim') + '</p></div>'; }
+  const matrix = slide === 0 || slide === 1; document.body.classList.toggle('cross', slide >= 0);
+  el('head').textContent = matrix ? 'Křížová · skupina ' + 'AB'[slide] : (sample ? 'UKÁZKA · ' : '') + header; el('screen').innerHTML = html; el('next').innerHTML = b?.last ? '<strong>Konec programu v ' + time(b.to) + '</strong>' : upcoming(next, minute, day, matrix);
+}
+async function refresh() {
+  if (loading) return; loading = true;
+  try {
+    const r = await fetch(api + '/api/public', { cache: 'no-store', headers: etag ? { 'If-None-Match': etag } : {}, signal: AbortSignal.timeout(10000) });
+    if (r.status !== 304 && !r.ok) throw Error();
+    const server = Number(r.headers.get('X-Server-Time')); if (server) offset = server - Date.now();
+    if (r.status !== 304) { data = toArena(await r.json()); etag = r.headers.get('etag'); version++; try { localStorage.setItem('stadion-last-v3', JSON.stringify(data)); } catch {} }
+    el('signal').textContent = ''; tick();
+  } catch { el('signal').textContent = data ? 'Offline · poslední načtené údaje' : 'Čeká se na připojení'; } finally { loading = false; }
+}
+function controls() { document.body.classList.remove('quiet'); clearTimeout(hideTimer); hideTimer = setTimeout(() => document.body.classList.add('quiet'), 4500); }
+el('full').onclick = async () => { try { await document.documentElement.requestFullscreen(); } catch { el('full').textContent = 'Použij F11'; } }; document.onpointermove = controls; document.onpointerdown = controls; controls();
+try { data = JSON.parse(localStorage.getItem('stadion-last-v3')); if (data) tick(); } catch { data = null; }
+try { const c = await fetch('config.json', { cache: 'no-store' }).then((r) => r.json()); api = c.apiBase || ''; } catch {}
+refresh(); setInterval(refresh, 5000); setInterval(tick, 500); window.addEventListener('online', refresh); document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+</script></html>
