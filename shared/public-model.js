@@ -109,5 +109,7 @@ export function buildPublicModel(raw) {
       lunch: { prices: { player: t.lunch_price_player_czk, staff: t.lunch_price_staff_czk }, deadline: t.lunch_deadline, menu: t.lunch_menu },
     },
     teams, blocks, matches, groups, lunches, orders,
+    tips: (raw.tips || []).map((x) => ({ id: x.id, title: x.title, body: x.body, address: x.address, url: x.url })),
+    finalDone: matches.some((m) => m.place === 1 && m.winner !== null),
   };
 }

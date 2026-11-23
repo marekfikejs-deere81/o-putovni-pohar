@@ -2,64 +2,388 @@
 <html lang="cs">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#112f50">
+<meta name="description" content="Vánoční turnaj 2. tříd o Putovní pohár – HC Rytíři Vlašim, 28. 12. 2026. Program, výsledky, tabulky a obědy.">
 <link rel="icon" href="loga/web/VLA.png">
-<title>O putovní pohár · HC Rytíři Vlašim</title>
+<title>O putovní pohár · Vlašim 28. 12. 2026</title>
 <style>
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4f6fa;color:#10233f}
-  header{background:#10335c;color:#fff;padding:16px 18px;display:flex;gap:12px;align-items:center}
-  header img{width:52px;height:52px;background:#fff;border-radius:10px;object-fit:contain;padding:3px}
-  header small{opacity:.8;letter-spacing:.04em;text-transform:uppercase;font-size:12px}
-  header h1{margin:2px 0;font-size:22px}
-  .note{margin:14px 16px;padding:10px 12px;background:#fff7e0;border:1px solid #f0d58a;border-radius:10px;font-size:14px}
-  h2{margin:18px 16px 8px;font-size:18px}
-  .slot{margin:0 12px 6px}
-  .time{background:#1f5fae;color:#fff;font-weight:700;padding:6px 10px;border-radius:8px 8px 0 0;font-size:14px}
-  .games{background:#fff;border-radius:0 0 8px 8px;padding:6px 10px}
-  .row{display:grid;grid-template-columns:22px 1fr auto 1fr;align-items:center;gap:6px;padding:5px 0;font-size:14px}
-  .row+.row{border-top:1px solid #e6ebf2}
-  .rink{font-weight:800;color:#1f5fae}
-  .t{display:flex;align-items:center;gap:6px}
-  .t.r{justify-content:flex-end;text-align:right}
-  .t img{width:24px;height:24px;object-fit:contain;flex:none}
-  .t span{white-space:nowrap;line-height:1.2}
-  .x{color:#7a8aa3}
-  .event{font-style:italic;color:#4a5d7a}
-  footer{padding:20px 16px;font-size:12px;color:#6a7b95}
+*{box-sizing:border-box}
+body{margin:0;background:#edf3f7;color:#152e48;font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:530px;margin:auto;background:#fff;min-height:100vh;padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+header{background:#112f50;color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px;border-bottom:5px solid #52afe3}
+header img{width:57px;height:57px;object-fit:contain;border-radius:8px;background:#fff;padding:2px}
+header small{display:block;color:#cae8ff;font-size:12px;letter-spacing:.03em}
+header h1{font-size:24px;line-height:1.12;margin:3px 0}
+small{color:#557184}
+section{padding:16px 18px}
+h2{font-size:24px;letter-spacing:-.5px;margin:4px 0 12px}
+h3{margin:18px 0 4px;font-size:17px}
+table{width:100%;border-collapse:collapse;margin:8px 0 16px}
+td,th{padding:5px 2px;text-align:center;border-bottom:1px solid #dae3ea}
+th{font-size:12px;color:#567389;background:#eef5fa;font-weight:600}
+button{font:inherit;color:#143854;border:1px solid #c5d6e2;background:#fff;border-radius:9px;min-height:44px;padding:7px 12px;cursor:pointer}
+button.on{background:#114b83;color:#fff;border-color:#114b83}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);background:#fbfdff;border-top:1px solid #ccdce7;width:min(100%,530px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:4px 2px max(4px,env(safe-area-inset-bottom));z-index:5}
+nav button{border:0;font-size:clamp(11px,3.1vw,13px);padding:6px 1px;line-height:1.15;min-width:0}
+.note{background:#edf5fb;padding:12px;border-radius:8px;margin:8px 0 14px}
+.warn{background:#fff7e0;border:1px solid #f0d58a}
+.toggle{display:flex;gap:6px;margin:6px 0 4px}
+.groupHead{margin:20px 0 2px}
+.groupHead small{display:block}
+.legend{display:block;margin:4px 0}
+.rowteam{display:inline-flex;align-items:center;gap:6px;text-align:left;line-height:1.15;vertical-align:middle}
+.rowteam img{width:24px;height:26px;object-fit:contain;flex:none}
+.rowteam .lbl>span{display:block;white-space:nowrap}
+.standings td:first-child,.standings th:first-child{width:1%;white-space:nowrap;padding-right:6px}
+.standings th:nth-child(2),.standings td:nth-child(2){text-align:left}
+.standings .rowteam{font-size:clamp(13px,3.6vw,15px)}
+.live,.live td{background:#dcf4e9}
+em.hraje{display:block;font:700 10px system-ui;color:#07543c;font-style:normal;letter-spacing:.02em}
+.matrixScroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.matrix th:first-child{text-align:left;width:1%}
+.matrix th img{width:26px;height:28px;object-fit:contain}
+.matrix td{padding:0;min-width:clamp(38px,10vw,48px)}
+.matrix td.diag{background:#edf5fa;color:#8aa2b4}
+.matrix td button{display:flex;flex-direction:column;justify-content:center;width:100%;min-height:calc(5em + 4px);border:0;border-radius:0;padding:0;font-size:clamp(10px,3vw,13px);font-weight:700;color:#164e82;background:transparent;white-space:nowrap}
+.matrix .rowteam{font-size:clamp(11px,3vw,13px)}
+.matrix .rowteam img{width:20px;height:22px}
+.halfcell{display:block;padding:1px 0;line-height:1.15;font-variant-numeric:tabular-nums}
+.halfcell+.halfcell{border-top:1px solid #d6e4eb}
+.halfcell small{display:block;font-weight:500;font-size:.93em}
+.mtotal{display:block;margin-top:6px;font-size:clamp(10px,2.6vw,12px);font-weight:400;line-height:1.25;color:#496579;white-space:nowrap}
+.mtotal b{color:#163d60}
+.now{border-left:4px solid #087858;background:#e6f6ee;padding:10px 12px;margin:8px 0 14px;border-radius:0 8px 8px 0}
+.now small{display:block}
+.now div{margin-top:4px}
+.slotTime{background:#145386;color:#fff;border-radius:6px;padding:7px 10px;margin:16px 0 5px;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+.slotTime.current{background:#0c3d66;border-left:5px solid #40c38b}
+.event{background:#edf5fa;color:#33536b;border-radius:6px;padding:8px 10px;margin:10px 0;font-variant-numeric:tabular-nums}
+.event.current{background:#dcf4e9;color:#07543c;font-weight:600}
+.fixture{border-left:3px solid #499aca;margin:6px 0;padding:6px 8px;cursor:pointer}
+.fixture.live{border-left-color:#087858;background:#f1faf5}
+.fixture .teams{display:flex;flex-direction:column;gap:3px;margin-top:3px}
+.fixture .side{display:flex;align-items:center;gap:8px;font-weight:650}
+.fixture .side img{width:26px;height:28px;object-fit:contain}
+.fixture .side .sc{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:800;min-width:2ch;text-align:right}
+.fixture .side.win{color:#07543c}
+.halves{width:auto;min-width:190px;margin:8px 0}
+.halves th,.halves td{padding:3px 10px}
+.place{background:#f5f9fc;border:1px solid #d8e4ed;border-radius:12px;padding:10px 12px;margin:10px 0}
+.place h3{margin:0 0 4px}
+.final{font-weight:700;margin-top:6px}
+.final div{display:flex;gap:6px;align-items:center}
+.final img{width:22px;height:24px;object-fit:contain}
+.card{background:#f5f9fc;border:1px solid #d8e4ed;border-radius:12px;padding:12px 14px;margin:10px 0}
+.card.live{background:#dcf4e9;border-color:#a9dcc4}
+.meal{display:flex;align-items:center;gap:8px;margin:6px 0;font-weight:650}
+.meal img{width:28px;height:30px;object-fit:contain}
+.meal .cnt{margin-left:auto;font-weight:500;font-size:14px;text-align:right;color:#33536b;white-space:nowrap}
+details{border-bottom:1px solid #dbe4eb}
+summary{cursor:pointer;font-weight:650;padding:12px 0}
+details dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:0 0 10px}
+details dt{color:#567389}
+details dd{margin:0}
+details ul{padding-left:20px;margin:4px 0 10px}
+details p{margin:6px 0 10px}
+dialog{border:0;border-radius:14px;max-width:min(92vw,420px);padding:16px}
+dialog::backdrop{background:rgba(10,25,40,.45)}
+dialog h3{margin-top:0}
+.status{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#557184;padding:6px 18px;background:#f6f9fb;border-bottom:1px solid #e3ebf1}
+.status.off{background:#fdecea;color:#9a2a1c}
+footer{padding:18px;text-align:center;font-size:13px;color:#557184;border-top:1px solid #e3ebf1}
+footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;min-height:auto;text-decoration:underline;font-size:13px}
+.pdf{display:block;text-align:center;background:#114b83;color:#fff;border-radius:9px;padding:12px;font-weight:700;margin:4px 0 12px;text-decoration:none}
+@media(max-width:379px){.matrix .rowteam img{display:none}}
 </style>
 </head>
 <body>
-<header>
-  <img src="loga/web/VLA.png" alt="HC Rytíři Vlašim">
-  <div><small>HC Rytíři Vlašim · 2. třídy</small><h1>O putovní pohár</h1><div>Vánoční turnaj · 28.&nbsp;12.&nbsp;2026</div></div>
-</header>
-<div class="note">Web turnaje se připravuje. Zatím zde je oficiální rozpis zápasů.</div>
-<h2>Program</h2>
-<main id="program">Načítání rozpisu…</main>
-<footer id="build"></footer>
+<main>
+  <header>
+    <img src="loga/web/VLA.png" alt="HC Rytíři Vlašim">
+    <div><small>HC RYTÍŘI VLAŠIM · 2. TŘÍDY</small><h1>O putovní pohár</h1><div>Vánoční turnaj · 28.&nbsp;12.&nbsp;2026</div></div>
+  </header>
+  <div class="status" id="status" role="status"><span>Načítání…</span><span></span></div>
+  <section id="panel"><p>Načítání turnaje…</p></section>
+  <footer>
+    <button data-page="rodice">Pro rodiče</button> ·
+    <a href="soukromi.html">Ochrana údajů</a> ·
+    <a href="admin.html">Pořadatel</a>
+  </footer>
+  <nav id="nav"></nav>
+</main>
+<dialog id="dlg"><article></article><form method="dialog"><button>Zavřít</button></form></dialog>
+
 <script type="module">
-  const [teams, blocks] = await Promise.all(['data/tymy.json', 'data/harmonogram.json'].map((u) => fetch(u).then((r) => r.json())));
-  const byCode = new Map(teams.map((t) => [t.code, t]));
-  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const side = (code, right) => {
-    const t = byCode.get(code);
-    if (!t) return `<span class="t${right ? ' r' : ''}">${esc(code[0])}. ze skupiny ${esc(code[1])}</span>`;
-    const img = `<img src="${esc(t.web)}" alt="">`;
-    const name = `<span>${t.lines.map(esc).join('<br>')}</span>`;
-    return `<span class="t${right ? ' r' : ''}">${right ? '' : img}${name}${right ? img : ''}</span>`;
+import { PROPOZICE } from './shared/propozice.js';
+import { toHHMM } from './shared/schedule.js';
+
+const TZ = 'Europe/Prague';
+const DAY = '2026-12-28';
+const POLL_MS = 5000;
+const RINK = { A: 'pod časomírou', B: 'pod restaurací' };
+const TABS = [['prehled', 'Přehled'], ['program', 'Program'], ['umisteni', 'Umístění'], ['obedy', 'Obědy'], ['propozice', 'Propozice']];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const czk = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Kč`;
+
+let api = '';
+let M = null;
+let etag = null;
+let lastOk = null;
+let failing = false;
+let page = (location.hash.slice(1) || 'prehled');
+let view = 'krizova';
+
+// ---------- čas turnaje (Europe/Prague); ?cas=HH:MM slouží jen k testování ----------
+const fmtParts = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+function pragueNow() {
+  const test = new URLSearchParams(location.search).get('cas');
+  if (test && /^\d{1,2}:\d{2}$/.test(test)) { const [h, m] = test.split(':').map(Number); return { date: DAY, minute: h * 60 + m }; }
+  const p = Object.fromEntries(fmtParts.formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, minute: Number(p.hour) * 60 + Number(p.minute) + Number(p.second) / 60 };
+}
+const isDay = () => pragueNow().date === DAY;
+function currentBlock() {
+  if (!M || !isDay()) return null;
+  const min = pragueNow().minute;
+  return M.blocks.find((b) => b.from <= min && min < b.to) || null;
+}
+
+// ---------- týmy a zápasy ----------
+const team = (id) => M.teams.find((t) => t.id === id);
+const logo = (t) => (t ? `<img alt="" src="${esc(t.logo.web)}">` : '');
+const lines = (t) => `<span class="lbl">${t.lines.map((l) => `<span>${esc(l)}</span>`).join('')}</span>`;
+const rowTeam = (id) => { const t = team(id); return `<span class="rowteam">${logo(t)}${lines(t)}</span>`; };
+const seedLabel = (seed) => `${seed[0]}. ze skupiny ${seed[1]}`;
+const match = (id) => M.matches.find((m) => m.id === id);
+const blockOf = (m) => M.blocks.find((b) => b.id === m.blockId);
+const periodPts = (x, y) => (x > y ? 2 : x === y ? 1 : 0);
+function totals(m, reverse = false) {
+  const g = [0, 0], p = [0, 0];
+  for (const [x, y] of m.periods) { g[0] += x; g[1] += y; p[0] += periodPts(x, y); p[1] += periodPts(y, x); }
+  return reverse ? { goals: [g[1], g[0]], pts: [p[1], p[0]] } : { goals: g, pts: p };
+}
+const isLive = (m) => { const b = currentBlock(); return Boolean(b && b.games.includes(m.id) && m.periods.length < 2); };
+const playing = (teamId) => M.matches.some((m) => isLive(m) && (m.home === teamId || m.away === teamId));
+const sideName = (m, s) => (m[s] != null ? esc(team(m[s]).name) : esc(seedLabel(m[s === 'home' ? 'homeSeed' : 'awaySeed'])));
+function status(m) {
+  if (m.periods.length === 2) return m.place && m.winner === null ? 'Rozhodnou nájezdy' : 'Dohráno';
+  if (m.periods.length === 1) return isLive(m) ? '2. třetina se hraje' : 'Zapsána 1. třetina';
+  return isLive(m) ? 'Hraje se podle rozpisu' : 'Bez zapsaného výsledku';
+}
+function halfTable(m, reverse = false) {
+  return `<table class="halves"><thead><tr><th>Třetina</th><th>Skóre</th><th>Body</th></tr></thead><tbody>${[0, 1].map((i) => {
+    const p = m.periods[i];
+    if (!p) return `<tr><th>${i + 1}.</th><td>—</td><td>—</td></tr>`;
+    const [x, y] = reverse ? [p[1], p[0]] : p;
+    return `<tr><th>${i + 1}.</th><td>${x}:${y}</td><td>${periodPts(x, y)}:${periodPts(y, x)}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+function openMatch(id, reverse = false) {
+  const m = match(id), b = blockOf(m);
+  const [first, second] = reverse ? ['away', 'home'] : ['home', 'away'];
+  const t = totals(m, reverse);
+  let extra = '';
+  if (m.periods.length) extra += `<p>Skóre celkem <b>${t.goals[0]}:${t.goals[1]}</b> · body <b>${t.pts[0]}:${t.pts[1]}</b></p>`;
+  if (m.place && m.shootout) extra += `<p>Rozhodující nájezdy vyhrál: <b>${esc(team(m.shootout === 'home' ? m.home : m.away).name)}</b></p>`;
+  $('dlg').querySelector('article').innerHTML = `<h3>${sideName(m, first)} × ${sideName(m, second)}</h3>
+    <p><small>${toHHMM(b.from)}–${toHHMM(b.to)} · Plocha ${m.rink} ${RINK[m.rink]}${m.place ? ` · o ${m.place}. místo` : ` · skupina ${m.rink}`}</small><br>${status(m)}</p>${halfTable(m, reverse)}${extra}`;
+  $('dlg').showModal();
+}
+window.openMatch = openMatch;
+
+// ---------- „Právě na ledě“ ----------
+function banner() {
+  const b = currentBlock();
+  if (!b) return '';
+  const last = b === M.blocks.at(-1);
+  const title = b.games.length ? 'Právě na ledě' : last ? 'Poslední bod programu' : b.title;
+  const rows = b.games.map((id) => { const m = match(id); return `<div><b>Plocha ${m.rink}</b> · ${sideName(m, 'home')} × ${sideName(m, 'away')}${m.periods.length === 2 ? ' · dohráno' : ''}</div>`; }).join('');
+  return `<aside class="now"><strong>${esc(title)}</strong><small>${toHHMM(b.from)}–${toHHMM(b.to)} · podle programu</small>${rows}${last ? `<div>${esc(b.title)}</div>` : ''}</aside>`;
+}
+
+// ---------- Přehled ----------
+function matrix(g) {
+  const ids = M.teams.filter((t) => t.group === g).sort((a, b) => a.slot - b.slot).map((t) => t.id);
+  const rows = M.groups[g].rows;
+  const games = M.matches.filter((m) => m.place === null && ids.includes(m.home));
+  const cell = (i, j) => {
+    if (i === j) return '<td class="diag">×</td>';
+    const m = games.find((x) => (x.home === i && x.away === j) || (x.home === j && x.away === i));
+    const rev = m.away === i;
+    const res = !m.periods.length ? '—' : [0, 1].map((k) => {
+      const p = m.periods[k];
+      if (!p) return '<span class="halfcell"><strong>—</strong><small>—</small></span>';
+      const [x, y] = rev ? [p[1], p[0]] : p;
+      return `<span class="halfcell"><strong>${x}:${y}</strong><small>${periodPts(x, y)} b.</small></span>`;
+    }).join('');
+    return `<td${isLive(m) ? ' class="live"' : ''}><button onclick="openMatch(${m.id},${rev})" aria-label="${esc(team(i).name)} proti ${esc(team(j).name)}">${res}${isLive(m) ? '<em class="hraje">HRAJE</em>' : ''}</button></td>`;
   };
-  document.getElementById('program').innerHTML = blocks.map((b) => {
-    const label = b.games.length ? (b.games.some((g) => g.place) ? 'Utkání o umístění' : 'Skupiny') : '';
-    const body = b.games.length
-      ? b.games.map((g) => `<div class="row"><span class="rink">${esc(g.rink)}</span>${side(g.home)}<span class="x">${g.place ? 'o ' + g.place + '. m.' : '×'}</span>${side(g.away, true)}</div>`).join('')
-      : `<div class="event">${esc(b.title)}</div>`;
-    return `<section class="slot"><div class="time">${esc(b.start)}–${esc(b.end)}${label ? ' · ' + label : ''}</div><div class="games">${body}</div></section>`;
-  }).join('');
+  return `<small class="legend">Nahoře je první třetina, pod čarou druhá. Pod skóre jsou body (b.). První číslo patří týmu vlevo.</small>
+    <div class="matrixScroll"><table class="matrix"><tr><th>Tým</th>${ids.map((i) => `<th><span aria-label="${esc(team(i).name)}">${logo(team(i))}</span></th>`).join('')}</tr>
+    ${ids.map((i) => { const r = rows.find((x) => x.id === i); return `<tr><th scope="row">${rowTeam(i)}<small class="mtotal">${M.groups[g].started ? `Skóre ${r.goalsFor}:${r.goalsAgainst} · Body <b>${r.points}</b>` : 'Skóre – · Body –'}</small></th>${ids.map((j) => cell(i, j)).join('')}</tr>`; }).join('')}
+    </table></div><small class="legend">— čeká na zápis · HRAJE = aktuální dvojice podle programu</small>`;
+}
+function standings(g) {
+  const G = M.groups[g];
+  const n = G.rows.length - 1;
+  return `<div class="matrixScroll"><table class="standings"><tr><th>Poř.</th><th>Tým</th><th>Odehráno</th><th>Skóre</th><th>Body</th></tr>
+    ${G.rows.map((r) => `<tr${playing(r.id) ? ' class="live"' : ''}><td>${G.started ? `${r.rank}.` : '–'}</td><td>${rowTeam(r.id)}${playing(r.id) ? '<em class="hraje">HRAJE</em>' : ''}</td><td>${r.played}/${n}</td><td>${G.started ? `${r.goalsFor}:${r.goalsAgainst}` : '–'}</td><td><b>${G.started ? r.points : '–'}</b></td></tr>`).join('')}
+    </table></div>`;
+}
+function pagePrehled() {
+  const done = M.groups.A.finished && M.groups.B.finished;
+  const started = M.groups.A.started || M.groups.B.started;
+  const manual = M.groups.A.manual || M.groups.B.manual;
+  const lots = [...M.groups.A.pendingLots, ...M.groups.B.pendingLots];
+  return `${M.reportReady ? `<a class="pdf" href="${api}/api/report.pdf">Stáhnout zápis turnaje (PDF)</a>` : ''}
+    <small>${done ? 'SKUPINOVÉ ZÁPASY DOHRÁNY' : started ? 'PRŮBĚŽNÉ VÝSLEDKY' : 'BEZ ZAPSANÝCH VÝSLEDKŮ'}</small>
+    <h2>Výsledky skupin</h2>${banner()}
+    ${manual ? '<p class="note">Pořadí skupin určil pořadatel.</p>' : ''}
+    ${lots.length ? '<p class="note warn">O části pořadí rozhodne los pořadatele.</p>' : ''}
+    <div class="toggle"><button class="${view === 'krizova' ? 'on' : ''}" data-view="krizova" aria-pressed="${view === 'krizova'}">Křížová tabulka</button>
+    <button class="${view === 'poradi' ? 'on' : ''}" data-view="poradi" aria-pressed="${view === 'poradi'}">Průběžné pořadí</button></div>
+    ${['A', 'B'].map((g) => `<div class="groupHead"><h3>Skupina ${g}</h3><small>Plocha ${g} ${RINK[g]}</small></div>${view === 'krizova' ? matrix(g) : standings(g)}`).join('')}
+    <p><small>Odehráno = počet dohraných zápasů z celkového počtu ve skupině. Body a skóre zahrnují každou potvrzenou třetinu.</small></p>`;
+}
+
+// ---------- Program ----------
+function fixture(id) {
+  const m = match(id);
+  const t = totals(m);
+  const win = m.place ? m.winner : m.periods.length === 2 ? (t.pts[0] > t.pts[1] ? 'home' : t.pts[1] > t.pts[0] ? 'away' : null) : null;
+  const side = (s, i) => {
+    const tid = m[s];
+    const label = tid != null ? `${logo(team(tid))}<span>${esc(team(tid).name)}</span>` : `<span>${esc(seedLabel(m[s === 'home' ? 'homeSeed' : 'awaySeed']))}</span>`;
+    return `<div class="side${win === s ? ' win' : ''}">${label}<span class="sc">${m.periods.length ? t.goals[i] : ''}</span></div>`;
+  };
+  return `<div class="fixture${isLive(m) ? ' live' : ''}" onclick="openMatch(${m.id})" role="button" tabindex="0">
+    <small>Plocha ${m.rink} ${RINK[m.rink]} · ${m.place ? `O ${m.place}. místo` : `Skupina ${m.rink}`} · ${status(m)}</small>
+    <div class="teams">${side('home', 0)}${side('away', 1)}</div>${isLive(m) ? '<em class="hraje">HRAJE SE</em>' : ''}</div>`;
+}
+function pageProgram() {
+  const cur = currentBlock();
+  let s = `<h2>Program turnaje</h2>${banner()}<p class="note"><b>Plocha A</b> pod časomírou · <b>Plocha B</b> pod restaurací</p>`;
+  for (const b of M.blocks) {
+    const c = b === cur;
+    if (b.games.length) s += `<h3 class="slotTime${c ? ' current' : ''}"${c ? ' aria-current="time"' : ''}>${toHHMM(b.from)}–${toHHMM(b.to)}${c ? ' · nyní' : ''}</h3>${b.games.map(fixture).join('')}`;
+    else s += `<p class="event${c ? ' current' : ''}"${c ? ' aria-current="time"' : ''}>${toHHMM(b.from)}–${toHHMM(b.to)} · ${esc(b.title)}${c ? ' · nyní' : ''}</p>`;
+  }
+  return s;
+}
+
+// ---------- Umístění ----------
+function pageUmisteni() {
+  const places = M.matches.filter((m) => m.place).sort((a, b) => a.place - b.place);
+  const seeded = places.some((m) => m.home != null);
+  return `<h2>O umístění</h2>${banner()}
+    ${!seeded ? '<p class="note">Dvojice se doplní po dohrání obou skupin podle konečného pořadí.</p>' : ''}
+    ${places.map((m) => {
+      const b = blockOf(m);
+      let res = '';
+      if (m.winner) {
+        const w = m.winner === 'home' ? m.home : m.away, l = m.winner === 'home' ? m.away : m.home;
+        res = `<div class="final"><div>${m.place}. ${logo(team(w))} ${esc(team(w).name)}</div><div>${m.place + 1}. ${logo(team(l))} ${esc(team(l).name)}</div></div>`;
+      }
+      return `<div class="place"><h3>O ${m.place}. místo</h3><small>${toHHMM(b.from)} · Plocha ${m.rink} · ${seedLabel(m.homeSeed)} × ${seedLabel(m.awaySeed)}</small>${fixture(m.id)}${res}</div>`;
+    }).join('')}`;
+}
+
+// ---------- Obědy (veřejně jen počty) ----------
+function pageObedy() {
+  const L = M.tournament.lunch;
+  const nowMin = isDay() ? pragueNow().minute : -1;
+  const orderOf = (teamId) => M.orders.find((o) => o.teams.includes(teamId));
+  const shown = new Set();
+  return `<h2>Obědy</h2>
+    <p class="note"><b>Menu:</b> ${esc(L.menu)}<br><b>Cena:</b> hráč ${czk(L.prices.player)} · realizační tým ${czk(L.prices.staff)}<br>
+    Objednávky do <b>12.&nbsp;12.&nbsp;2026 včetně</b> přes odkaz, který každý tým dostal od pořadatele. Restaurace na zimním stadionu, jídlo bude připravené před příchodem.</p>
+    ${M.lunches.map((l) => {
+      const cur = nowMin >= l.from && nowMin < l.to;
+      const items = l.teams.map((tid) => {
+        const o = orderOf(tid);
+        if (o && shown.has(o.key)) return '';
+        if (o) shown.add(o.key);
+        const ts = o ? o.teams.map(team) : [team(tid)];
+        const cnt = !o || !o.ordered ? '<i>neobjednáno</i>' : `hráči ${o.players} · RT ${o.staff}`;
+        return `<div class="meal">${ts.map((x) => logo(x)).join('')}<span>${esc(o?.label ?? team(tid).name)}</span><span class="cnt">${cnt}</span></div>`;
+      }).join('');
+      return `<div class="card${cur ? ' live' : ''}"><b>${toHHMM(l.from)}–${toHHMM(l.to)}</b>${cur ? ' · <b>právě obědvají</b>' : ''}${items}</div>`;
+    }).join('')}`;
+}
+
+// ---------- Propozice a Pro rodiče ----------
+function pagePropozice() {
+  return `<h2>Propozice</h2>${PROPOZICE.map((s) => `<details><summary>${esc(s.title)}</summary>
+    ${s.items ? `<dl>${s.items.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
+    ${(s.text || []).map((p) => `<p>${esc(p)}</p>`).join('')}
+    ${s.list ? `<ul>${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${(s.after || []).map((p) => `<p>${esc(p)}</p>`).join('')}</details>`).join('')}`;
+}
+function pageRodice() {
+  const tips = M.tips || [];
+  return `<h2>Pro rodiče</h2><h3>Restaurace a tipy v okolí</h3>
+    ${tips.length ? tips.map((t) => `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}${t.url && /^https:\/\//.test(t.url) ? `<a href="${esc(t.url)}" target="_blank" rel="noopener">Web / mapa</a>` : ''}</article>`).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
+    <h3>Kontakt</h3><p>Pořadatel turnaje: Tomáš Vondráček, +420 734 362 033<br>Stravování: Martin Kakos, +420 732 773 346</p>`;
+}
+
+const PAGES = { prehled: pagePrehled, program: pageProgram, umisteni: pageUmisteni, obedy: pageObedy, propozice: pagePropozice, rodice: pageRodice };
+
+// ---------- vykreslení a obnova ----------
+function render() {
+  if (!M) return;
+  if (!PAGES[page]) page = 'prehled';
+  $('nav').innerHTML = TABS.map(([k, n]) => `<button class="${page === k ? 'on' : ''}" data-page="${k}">${n}</button>`).join('');
+  const openDetails = [...document.querySelectorAll('details[open] summary')].map((s) => s.textContent);
+  const y = window.scrollY;
+  $('panel').innerHTML = PAGES[page]();
+  document.querySelectorAll('details summary').forEach((s) => { if (openDetails.includes(s.textContent)) s.parentElement.open = true; });
+  window.scrollTo(0, y);
+}
+document.addEventListener('click', (e) => {
+  const p = e.target.closest('[data-page]');
+  if (p) { page = p.dataset.page; history.replaceState(null, '', `${location.search}#${page}`); render(); window.scrollTo(0, 0); return; }
+  const v = e.target.closest('[data-view]');
+  if (v) { view = v.dataset.view; render(); }
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList?.contains('fixture')) e.target.click(); });
+
+function setStatus() {
+  const el = $('status');
+  const t = lastOk ? lastOk.toLocaleTimeString('cs-CZ', { timeZone: TZ }) : '—';
+  el.classList.toggle('off', failing);
+  el.innerHTML = failing
+    ? `<span>Bez spojení se serverem</span><span>data z ${t}</span>`
+    : `<span>Aktualizováno ${t}</span><span>obnova každých 5 s</span>`;
+}
+
+async function load() {
   try {
-    const c = await fetch('config.json').then((r) => r.json());
-    document.getElementById('build').textContent = `Verze ${c.commit.slice(0, 7)} · ${new Date(c.builtAt).toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' })}`;
-  } catch {}
+    const res = await fetch(`${api}/api/public`, { headers: etag ? { 'If-None-Match': etag } : {}, cache: 'no-store' });
+    if (res.status === 200) { M = await res.json(); etag = res.headers.get('ETag'); if (!$('dlg').open) render(); }
+    else if (res.status !== 304) throw new Error(String(res.status));
+    lastOk = new Date(); failing = false;
+  } catch {
+    failing = true;
+    if (!M) $('panel').innerHTML = '<p class="note warn">Data turnaje se nepodařilo načíst. Zkusíme to znovu za pár sekund.</p>';
+  }
+  setStatus();
+}
+
+let timer = null;
+function loop() {
+  clearTimeout(timer);
+  if (document.hidden) return;
+  timer = setTimeout(async () => { await load(); loop(); }, POLL_MS);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) clearTimeout(timer); else load().then(loop); });
+setInterval(() => { if (!document.hidden && M && !$('dlg').open) render(); }, 20000); // posun „nyní“ i bez nových dat
+
+try { const c = await fetch('config.json', { cache: 'no-store' }).then((r) => r.json()); api = c.apiBase || ''; } catch {}
+await load();
+loop();
 </script>
 </body>
 </html>
