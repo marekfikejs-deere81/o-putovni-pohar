@@ -21,7 +21,7 @@ ADMIN_PATH = "/o-putovni-pohar/admin.html"
 MAIL_MODE = "test"
 MAIL_TEST_RECIPIENTS = "marek.fikejs@gmail.com"
 SUMMARY_AT = "2026-12-13T07:00:00Z"
-ALLOWED_ORIGINS = "https://marekfikejs-deere81.github.io,http://localhost:5173"
+ALLOWED_ORIGINS = "https://www.vlasimskypohar.cz,https://marekfikejs-deere81.github.io,http://localhost:5173"
 
 [triggers]
 crons = ["0 * * * *"]
@@ -57,4 +57,4 @@ ADMIN_PATH = "/o-putovni-pohar/admin.html"
 MAIL_MODE = "test"
 MAIL_TEST_RECIPIENTS = "marek.fikejs@gmail.com"
 SUMMARY_AT = "2026-12-13T07:00:00Z"
-ALLOWED_ORIGINS = "https://marekfikejs-deere81.github.io"
+ALLOWED_ORIGINS = "https://www.vlasimskypohar.cz,https://marekfikejs-deere81.github.io"
