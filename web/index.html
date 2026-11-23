@@ -356,7 +356,7 @@ function pageRodice() {
     <a class="stream" href="https://www.czechicehockey.tv/cs/club/hc-rytiri-vlasim/Turnaje" target="_blank" rel="noopener">
       <img src="loga/partneri/czechicehockey-tv.jpg" alt="CzechIceHockey.tv" width="640" height="182">
       <span>Všechny zápasy turnaje budou živě přenášeny přes platformu <b>www.czechicehockey.tv</b>. <u>Sledovat přenosy</u></span></a>
-    <p class="closed">V době výdeje obědů pro hráče a realizační týmy bude restaurace na zimním stadionu pro veřejnost uzavřena. V tu dobu doporučujeme ke stravování využít restaurace uvedené níže.</p>
+    <p class="closed">V době výdeje obědů pro hráče a realizační týmy bude mít restaurace na zimním stadionu výrazně sníženou kapacitu pro veřejnost. V tu dobu doporučujeme využít ke stravování restaurace uvedené níže.</p>
     <h3>Restaurace a tipy v okolí</h3>
     ${tips.length ? tips.map((t) => { const map = t.url && /^https:\/\//.test(t.url) ? t.url : t.address ? `https://mapy.cz/zakladni?q=${encodeURIComponent(t.address)}` : ''; return `<article class="card"><b>${esc(t.title)}</b>${t.address ? `<div><small>${esc(t.address)}</small></div>` : ''}${t.body ? `<p>${esc(t.body)}</p>` : ''}<div class="links">${map ? `<a class="maplink" href="${esc(map)}" target="_blank" rel="noopener">Otevřít v mapách</a>` : ''}${t.web && /^https?:\/\//.test(t.web) ? `<a class="maplink" href="${esc(t.web)}" target="_blank" rel="noopener">Webové stránky</a>` : ''}</div></article>`; }).join('') : '<p class="note">Tipy na restaurace doplní pořadatel.</p>'}
     <h3>Kontakt</h3><p>Pořadatel turnaje: Tomáš Vondráček, +420 734 362 033<br>Stravování: Martin Kakos, +420 732 773 346</p>`;
