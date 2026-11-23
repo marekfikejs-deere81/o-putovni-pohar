@@ -1,0 +1,63 @@
+name: Průzkum Neon Auth – tok tokenu (jen TEST větev)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Auth URL TESTOVACÍ větve'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pokusný účet a tvar tokenů
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          case "$BASE" in *ep-little-silence*) ;; *) echo "::error::Jen pro testovací větev"; exit 1;; esac
+          EMAIL="probe-$(date +%s)@example.com"; PASS="Probe-$(openssl rand -hex 12)"
+          redact() { python3 -c '
+          import sys,json
+          try: d=json.load(sys.stdin)
+          except Exception: print("(ne-JSON)"); sys.exit()
+          def r(x):
+              if isinstance(x,dict): return {k:(("<"+str(len(v))+" znaků>") if isinstance(v,str) and k.lower() in ("token","access_token","jwt","session_token") else r(v)) for k,v in x.items()}
+              if isinstance(x,list): return [r(i) for i in x]
+              return x
+          print(json.dumps(r(d),ensure_ascii=False)[:700])'; }
+          echo "=== sign-up (bez Origin)"
+          curl -s -D h1.txt -o b1.json -X POST "$BASE/sign-up/email" -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"name\":\"Probe\"}"
+          head -1 h1.txt; redact < b1.json
+          echo "=== sign-in (bez Origin)"
+          curl -s -D h2.txt -o b2.json -X POST "$BASE/sign-in/email" -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}"
+          head -1 h2.txt; grep -i -E '^(set-auth|set-cookie)' h2.txt | sed -E 's/=([^;]{6})[^;]*/=\1…/'; redact < b2.json
+          ST=$(python3 -c 'import json;print(json.load(open("b2.json")).get("token") or "")')
+          COOKIE=$(grep -i '^set-cookie' h2.txt | sed -E 's/^set-cookie: *//I; s/;.*//' | tr '\n' ';')
+          echo "session token v těle: ${#ST} znaků"
+          echo "=== /token s Bearer session token"
+          curl -s -D h3.txt -o b3.json "$BASE/token" -H "Authorization: Bearer $ST"; head -1 h3.txt; redact < b3.json
+          echo "=== /token s cookie"
+          curl -s -D h4.txt -o b4.json "$BASE/token" -H "Cookie: $COOKIE"; head -1 h4.txt; redact < b4.json
+          echo "=== /get-session s Bearer (hlavička set-auth-jwt?)"
+          curl -s -D h5.txt -o b5.json "$BASE/get-session" -H "Authorization: Bearer $ST"; head -1 h5.txt
+          grep -i '^set-auth' h5.txt | sed -E 's/: *(.{8}).*/: \1…/'; redact < b5.json
+          echo "=== nároky JWT (bez podpisu)"
+          for f in b3.json b4.json; do
+            python3 - "$f" <<'PY'
+          import sys,json,base64
+          try: t=json.load(open(sys.argv[1])).get("token")
+          except Exception: t=None
+          if t and t.count(".")==2:
+              pad=lambda s:s+"="*(-len(s)%4)
+              h,p,_=t.split(".")
+              print(sys.argv[1],"header",json.loads(base64.urlsafe_b64decode(pad(h))))
+              c=json.loads(base64.urlsafe_b64decode(pad(p)))
+              print(sys.argv[1],"claims",{k:(v if k in("iss","aud","exp","iat","role") else type(v).__name__) for k,v in c.items()})
+          PY
+          done
