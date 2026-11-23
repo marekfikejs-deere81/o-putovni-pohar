@@ -68,6 +68,27 @@ jobs:
           if [ "$TARGET" = "production" ]; then ENVFLAG="--env production"; else ENVFLAG=""; fi
           printf '%s' "$DB_URL" | npx wrangler secret put DATABASE_URL $ENVFLAG
 
+      - name: Tajemství Workeru (Google OAuth, šifrovací klíč)
+        working-directory: worker
+        env:
+          GID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GSECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        run: |
+          if [ "$TARGET" = "production" ]; then ENVFLAG="--env production"; else ENVFLAG=""; fi
+          if [ -n "$GID" ] && [ -n "$GSECRET" ]; then
+            printf '%s' "$GID" | npx wrangler secret put GOOGLE_CLIENT_ID $ENVFLAG
+            printf '%s' "$GSECRET" | npx wrangler secret put GOOGLE_CLIENT_SECRET $ENVFLAG
+          else
+            echo "::notice::Google OAuth klient zatím není v GitHub Secrets – přeskočeno."
+          fi
+          # Šifrovací klíč vznikne jednou přímo v Cloudflare a nikde se nevypisuje.
+          if ! npx wrangler secret list $ENVFLAG --format json | grep -q '"TOKEN_ENCRYPTION_KEY"'; then
+            openssl rand -base64 48 | tr -d '\n' | npx wrangler secret put TOKEN_ENCRYPTION_KEY $ENVFLAG
+            echo "Vytvořen nový TOKEN_ENCRYPTION_KEY."
+          else
+            echo "TOKEN_ENCRYPTION_KEY už existuje – beze změny."
+          fi
+
       - name: Kontrola živé adresy
         run: |
           if [ "$TARGET" = "production" ]; then NAME=o-putovni-pohar-api; else NAME=o-putovni-pohar-api-test; fi

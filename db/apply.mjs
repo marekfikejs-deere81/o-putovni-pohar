@@ -44,8 +44,8 @@ export async function seed(exec, log = console.log) {
   await exec('BEGIN');
   try {
     await exec(
-      `INSERT INTO tournament (id, name, day, time_zone, lunch_price_czk, lunch_deadline, lunch_menu)
-       VALUES ($1, $2, '2026-12-28', 'Europe/Prague', 170, '2026-12-13T00:00:00+01:00', $3)
+      `INSERT INTO tournament (id, name, day, time_zone, lunch_price_player_czk, lunch_price_staff_czk, lunch_deadline, lunch_menu)
+       VALUES ($1, $2, '2026-12-28', 'Europe/Prague', 140, 170, '2026-12-13T00:00:00+01:00', $3)
        ON CONFLICT (id) DO NOTHING`,
       [T, 'Vánoční turnaj 2. tříd o Putovní pohár', 'Hovězí vývar, špagety s boloňskou omáčkou, šťáva'],
     );

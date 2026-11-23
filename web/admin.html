@@ -68,7 +68,8 @@ const store = {
 };
 let api = '';
 let auth = store.get();
-let price = 170;
+let prices = { player: 140, staff: 170 };
+const rowPrice = (r) => r.players * prices.player + r.staff * prices.staff;
 let flash = null;
 let generated = null; // [{key,label,token}] – jen v paměti, po obnovení stránky zmizí
 
@@ -173,7 +174,7 @@ async function renderAdmin() {
   setHeader();
   app.innerHTML = `<div class="card">Načítání objednávek…</div>`;
   let rows;
-  try { rows = (await call('GET', '/api/admin/orders')).orders; }
+  try { const d = await call('GET', '/api/admin/orders'); rows = d.orders; if (d.prices) prices = d.prices; }
   catch (err) { if (!err.silent) { app.innerHTML = `<div class="banner err">${esc(err.message)}</div>`; } return; }
   const ordered = rows.filter((r) => r.players !== null);
   const sumP = ordered.reduce((a, r) => a + r.players, 0);
@@ -181,21 +182,21 @@ async function renderAdmin() {
   app.innerHTML = `${banner()}
     <div class="tabs"><button class="on">Obědy</button></div>
     <section class="card"><h2>Objednávky obědů</h2>
-      <div class="muted">Uzávěrka pro týmy 12. 12. 2026 ve 24:00. Ty můžeš měnit kdykoli – každá změna jde do historie a odejde nové potvrzení.</div>
+      <div class="muted">Cena: hráč ${czk(prices.player)}, realizační tým ${czk(prices.staff)}. Uzávěrka pro týmy 12. 12. 2026 ve 24:00. Ty můžeš měnit kdykoli – každá změna jde do historie a odejde nové potvrzení.</div>
       <div style="overflow-x:auto"><table>
-        <thead><tr><th>Tým</th><th class="num">Hráči</th><th class="num">RT</th><th class="num">Cena</th><th class="hide-m">Poznámka</th><th class="hide-m">E-mail</th><th>Stav</th><th></th></tr></thead>
+        <thead><tr><th>Tým</th><th class="num">Hráči</th><th class="num">RT</th><th class="num">Cena</th><th class="hide-m">E-mail</th><th>Stav</th><th></th></tr></thead>
         <tbody>${rows.map((r) => {
           const done = r.players !== null;
           return `<tr data-key="${esc(r.key)}">
             <td><b>${esc(r.label)}</b><div class="muted">${r.link_created ? `odkaz ${r.link_used ? 'použit ' + fmt(r.link_used) : 'vydán ' + fmt(r.link_created)}` : 'bez odkazu'}</div></td>
             <td class="num">${done ? r.players : '—'}</td><td class="num">${done ? r.staff : '—'}</td>
-            <td class="num">${done ? czk((r.players + r.staff) * price) : '—'}</td>
-            <td class="hide-m">${esc(r.note) || ''}</td><td class="hide-m">${esc(r.email) || ''}</td>
+            <td class="num">${done ? czk(rowPrice(r)) : '—'}</td>
+            <td class="hide-m">${esc(r.email) || ''}</td>
             <td>${done ? `<span class="pill ok">v${r.version}</span><div class="muted">${fmt(r.updated_at)}</div>` : '<span class="pill no">neobjednáno</span>'}</td>
             <td><button class="btn small secondary" data-edit="${esc(r.key)}">${done ? 'Upravit' : 'Zadat'}</button></td></tr>
-            <tr hidden data-editrow="${esc(r.key)}"><td colspan="8"></td></tr>`;
+            <tr hidden data-editrow="${esc(r.key)}"><td colspan="7"></td></tr>`;
         }).join('')}</tbody></table></div>
-      <div class="totals"><span>Objednáno ${ordered.length}/9</span><span>Hráči ${sumP}</span><span>RT ${sumS}</span><span>Porcí ${sumP + sumS}</span><span>Celkem ${czk((sumP + sumS) * price)}</span></div>
+      <div class="totals"><span>Objednáno ${ordered.length}/9</span><span>Hráči ${sumP}</span><span>RT ${sumS}</span><span>Porcí ${sumP + sumS}</span><span>Celkem ${czk(sumP * prices.player + sumS * prices.staff)}</span></div>
     </section>
     <section class="card"><h2>Odkazy pro týmy</h2>
       <div class="muted">Každý tým dostane vlastní odkaz. Vygenerováním nových odkazů přestanou platit staré. Odkazy se zobrazí jen teď – po obnovení stránky už je neuvidíš (lze vygenerovat znovu).</div>
@@ -245,7 +246,6 @@ function openEdit(r) {
   row.firstElementChild.innerHTML = `<form id="e-${r.key}"><div class="edit">
     <div><label>Hráči</label><input name="players" inputmode="numeric" value="${r.players ?? 0}"></div>
     <div><label>Realizační tým</label><input name="staff" inputmode="numeric" value="${r.staff ?? 0}"></div></div>
-    <label>Poznámka (max. 100 znaků)</label><input name="note" maxlength="100" value="${esc(r.note || '')}">
     <label>E-mail pro potvrzení</label><input name="email" type="email" value="${esc(r.email || '')}">
     <div style="margin-top:10px;display:flex;gap:8px"><button class="btn" type="submit">Uložit a poslat potvrzení</button>
     <button class="btn secondary" type="button" data-cancel>Zrušit</button></div><div class="muted" data-msg></div></form>`;
@@ -255,7 +255,7 @@ function openEdit(r) {
     e.preventDefault();
     const v = Object.fromEntries(new FormData(f));
     try {
-      await call('PUT', `/api/admin/orders/${r.key}`, { players: v.players, staff: v.staff, note: v.note, email: v.email, version: r.version ?? null });
+      await call('PUT', `/api/admin/orders/${r.key}`, { players: v.players, staff: v.staff, email: v.email, version: r.version ?? null });
       flash = { t: 'ok', m: `Objednávka ${r.label} uložena.` }; renderAdmin();
     } catch (err) {
       if (err.silent) return;

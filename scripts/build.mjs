@@ -19,7 +19,7 @@ writeFileSync(`${out}/config.json`, JSON.stringify(config, null, 2));
 // GitHub Pages nemá Jekyll zpracovávat soubory.
 writeFileSync(`${out}/.nojekyll`, '');
 
-for (const required of ['index.html', 'stadion.html', 'obedy.html', 'admin.html']) {
+for (const required of ['index.html', 'stadion.html', 'obedy.html', 'admin.html', 'soukromi.html']) {
   if (!existsSync(`${out}/${required}`)) throw new Error(`Chybí ${required} v buildu`);
 }
 const size = readFileSync(`${out}/stadion.html`).length;

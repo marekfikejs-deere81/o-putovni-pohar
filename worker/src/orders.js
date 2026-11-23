@@ -42,7 +42,7 @@ export async function withTx(q, fn) {
 
 async function tournamentInfo(q, nowIso) {
   const [t] = await q(
-    `SELECT name, lunch_price_czk AS price, lunch_menu AS menu,
+    `SELECT name, lunch_price_player_czk AS price_player, lunch_price_staff_czk AS price_staff, lunch_menu AS menu,
             to_char(lunch_deadline AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS deadline,
             ($2::timestamptz >= lunch_deadline) AS closed
      FROM tournament WHERE id = $1`,
@@ -80,7 +80,7 @@ const orderRow = (o) => o && {
 async function enqueueConfirmation(q, label, order, t, lunch) {
   const mail = confirmationMail(
     { ...order, label },
-    { name: t.name, dayText: DAY_TEXT, price: t.price, menu: t.menu, organizer: ORGANIZER },
+    { name: t.name, dayText: DAY_TEXT, prices: { player: t.price_player, staff: t.price_staff }, menu: t.menu, organizer: ORGANIZER },
     lunch[0] || null,
   );
   await q(
@@ -115,7 +115,7 @@ export async function teamOrderView(q, tokenHash, nowIso) {
   return {
     key: access.key, label: access.label, ...info,
     order: orderRow(o) || null,
-    closed: Boolean(t.closed), deadline: t.deadline, price: t.price, menu: t.menu, organizer: ORGANIZER,
+    closed: Boolean(t.closed), deadline: t.deadline, prices: { player: t.price_player, staff: t.price_staff }, menu: t.menu, organizer: ORGANIZER,
   };
 }
 

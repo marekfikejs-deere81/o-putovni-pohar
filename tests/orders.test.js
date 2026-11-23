@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 import { migrate, seed, TOURNAMENT_ID } from '../db/apply.mjs';
-import { validateOrder, confirmationMail, czk } from '../shared/orders.js';
+import { validateOrder, confirmationMail, czk, totalPrice } from '../shared/orders.js';
 import {
   hashToken, newToken, isTokenShape, teamOrderView, submitTeamOrder,
   adminSaveOrder, adminGenerateLinks, adminListOrders,
@@ -24,27 +24,32 @@ async function setup() {
   return { q, links, tok };
 }
 
-const ok = { players: 12, staff: 3, note: 'bezlepková 1×', email: 'trener@example.cz' };
+const ok = { players: 12, staff: 3, email: 'trener@example.cz' };
+const NB = '\u00a0';
 
-test('Validace: počty, poznámka 100/101 znaků, e-mail', () => {
+test('Validace: počty, e-mail; poznámka se ignoruje', () => {
   assert.deepEqual(validateOrder(ok).errors, {});
   assert.ok(validateOrder({ ...ok, players: -1 }).errors.players);
   assert.ok(validateOrder({ ...ok, staff: 1.5 }).errors.staff);
   assert.ok(validateOrder({ ...ok, players: '' }).errors.players);
-  assert.deepEqual(validateOrder({ ...ok, note: 'x'.repeat(100) }).errors, {});
-  assert.ok(validateOrder({ ...ok, note: 'x'.repeat(101) }).errors.note);
+  const withNote = validateOrder({ ...ok, note: 'x'.repeat(500) });
+  assert.deepEqual(withNote.errors, {});
+  assert.equal(withNote.value.note, '');
   assert.ok(validateOrder({ ...ok, email: '' }).errors.email);
   assert.ok(validateOrder({ ...ok, email: 'neni-email' }).errors.email);
   assert.equal(validateOrder({ ...ok, players: '0', staff: '0' }).value.players, 0);
 });
 
-test('Cena a e-mail: 12 + 3 = 15 × 170 = 2 550 Kč, kopie pořadateli, oběd', () => {
-  assert.equal(czk(2550), '2 550 Kč');
-  const m = confirmationMail({ ...ok, label: 'HC Lev Benešov', version: 1 },
-    { name: 'Vánoční turnaj', dayText: 'pondělí 28. 12. 2026', price: 170, menu: 'Vývar, špagety', organizer: 'Marek' },
+test('Cena a e-mail: 12 × 140 + 3 × 170 = 2 190 Kč, oběd, bez poznámky', () => {
+  assert.equal(czk(2190), `2${NB}190${NB}Kč`);
+  assert.equal(totalPrice({ players: 12, staff: 3 }, { player: 140, staff: 170 }), 2190);
+  const m = confirmationMail({ ...ok, note: 'nemá se objevit', label: 'HC Lev Benešov', version: 1 },
+    { name: 'Vánoční turnaj', dayText: 'pondělí 28. 12. 2026', prices: { player: 140, staff: 170 }, menu: 'Vývar, špagety', organizer: 'Marek' },
     { from: 745, to: 765 });
   assert.match(m.subject, /^Objednávka obědů – HC Lev Benešov/);
-  for (const s of ['Celkem porcí: 15', '2 550 Kč', '12:25–12:45', 'bezlepková', 'pondělí 28. 12. 2026', 'závazná']) assert.ok(m.body.includes(s), s);
+  for (const s of ['Celkem porcí: 15', `12 × 140${NB}Kč = 1${NB}680${NB}Kč`, `3 × 170${NB}Kč = 510${NB}Kč`,
+    `Celková cena: 2${NB}190${NB}Kč`, '12:25–12:45', 'pondělí 28. 12. 2026', 'závazná']) assert.ok(m.body.includes(s), s);
+  assert.ok(!/Poznámka|nemá se objevit/.test(m.body));
 });
 
 test('Tokeny: 9 odkazů, v DB jen otisk, nový odkaz zneplatní starý', async () => {
@@ -98,8 +103,8 @@ test('Uzávěrka na serveru: 23:59:59 ještě ano, 00:00:00 už ne', async () =>
 
 test('Neplatný vstup se neuloží (422) a nezaloží e-mail', async () => {
   const { q, tok } = await setup();
-  await assert.rejects(submitTeamOrder(q, tok.PLZ, { ...ok, note: 'x'.repeat(101) }, 'klik-plz1', BEFORE),
-    (e) => e.status === 422 && Boolean(e.data.fields.note));
+  await assert.rejects(submitTeamOrder(q, tok.PLZ, { ...ok, staff: -1 }, 'klik-plz1', BEFORE),
+    (e) => e.status === 422 && Boolean(e.data.fields.staff));
   const [c] = await q(`SELECT (SELECT count(*)::int FROM lunch_order) o, (SELECT count(*)::int FROM mail_outbox) m`);
   assert.deepEqual(c, { o: 0, m: 0 });
 });
@@ -135,5 +140,5 @@ test('Veřejný model: jen počty, neobjednáno ≠ výslovná nula, žádné e-
   assert.deepEqual([by.BEN.ordered, by.BEN.players], [false, null]);
   assert.equal(by.VLS.teams.length, 2);
   const text = JSON.stringify(m);
-  assert.ok(!text.includes('trener@example.cz') && !text.includes('bezlepková'));
+  assert.ok(!text.includes('trener@example.cz'));
 });

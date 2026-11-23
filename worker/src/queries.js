@@ -1,7 +1,7 @@
 // SQL dotazy pro veřejný model. Stejné dotazy používají testy (PGlite) i Worker (Neon).
 export const PUBLIC_QUERIES = {
   tournament: `SELECT id, name, to_char(day, 'YYYY-MM-DD') AS day, time_zone, revision::text AS revision, manual_order,
-                 lunch_price_czk, to_char(lunch_deadline AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS lunch_deadline, lunch_menu
+                 lunch_price_player_czk, lunch_price_staff_czk, to_char(lunch_deadline AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS lunch_deadline, lunch_menu
                FROM tournament WHERE id = $1`,
   teams: `SELECT id, code, name, line1, line2, color, web_logo, stadium_logo, logo_version FROM team ORDER BY id`,
   members: `SELECT team_id, grp, slot FROM group_member WHERE tournament_id = $1`,

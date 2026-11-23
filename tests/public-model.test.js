@@ -31,7 +31,7 @@ test('Prázdný turnaj: model ze seedu, pořadí „–“, obědy z kotev, nasa
   assert.ok(m.matches.filter((x) => x.place).every((x) => x.home === null && x.away === null));
   assert.deepEqual(m.lunches.map((l) => l.from), [645, 670, 695, 720, 745]); // 10:45, 11:10, 11:35, 12:00, 12:25
   assert.equal(m.tournament.lunch.deadline, '2026-12-12T23:00:00Z');
-  assert.equal(m.tournament.lunch.price, 170);
+  assert.deepEqual(m.tournament.lunch.prices, { player: 140, staff: 170 });
 });
 
 test('Přejímka 0:0 a 1:2 + 5:3 přes databázi', async () => {

@@ -117,6 +117,6 @@ test('Obědy: 5 oken, 10 týmů, časy z kotev, žádná kolize s vlastním záp
   assert.equal(toHHMM(lunchWindows(lunches, shifted)[0].from), '10:55');
 });
 
-test('Cena obědu: 12 hráčů + 3 RT = 15 × 170 = 2 550 Kč', () => {
-  assert.equal((12 + 3) * 170, 2550);
+test('Cena obědu: 12 hráčů × 140 + 3 RT × 170 = 2 190 Kč', () => {
+  assert.equal(12 * 140 + 3 * 170, 2190);
 });

@@ -106,7 +106,7 @@ export function buildPublicModel(raw) {
     revision: Number(t.revision),
     tournament: {
       name: t.name, day: t.day, timeZone: t.time_zone,
-      lunch: { price: t.lunch_price_czk, deadline: t.lunch_deadline, menu: t.lunch_menu },
+      lunch: { prices: { player: t.lunch_price_player_czk, staff: t.lunch_price_staff_czk }, deadline: t.lunch_deadline, menu: t.lunch_menu },
     },
     teams, blocks, matches, groups, lunches, orders,
   };

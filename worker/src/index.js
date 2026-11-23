@@ -7,6 +7,8 @@ import { ApiError } from './errors.js';
 import {
   hashToken, isTokenShape, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
 } from './orders.js';
+import { startOAuth, finishOAuth, gmailSend } from './gmail.js';
+import { processOutbox, maybeQueueSummary, queueTest, mailStatus, adminMailAction } from './mail.js';
 import { requireAdmin as requireAdminSession, login, logout, requestPasswordReset, resetPassword, signUpOwner } from './auth.js';
 
 const requireAdmin = (request, env) => requireAdminSession(request, env, db(env));
@@ -109,7 +111,26 @@ async function health(request, env) {
   });
 }
 
+/** Souhrn (pokud nastal čas) a odeslání splatné pošty. Volá cron každou hodinu (šetří výpočetní hodiny Neonu) a hned po každém zápisu. */
+async function runMail(env, ctx) {
+  try {
+    await withClient(env, ctx, async (q) => {
+      await maybeQueueSummary(q, env);
+      if (!env.GOOGLE_CLIENT_ID || !env.TOKEN_ENCRYPTION_KEY) return;
+      const [acc] = await q(`SELECT 1 FROM oauth_account WHERE provider = 'google'`);
+      if (!acc) return;
+      await processOutbox(q, env, (msg) => gmailSend(env, q, msg));
+    });
+  } catch (e) {
+    console.error(JSON.stringify({ msg: 'mail run failed', error: String(e?.message || e) }));
+  }
+}
+
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runMail(env, ctx));
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
@@ -129,6 +150,7 @@ export default {
         const body = await readJson(request);
         const idem = request.headers.get('Idempotency-Key');
         const res = await withClient(env, ctx, (q) => submitTeamOrder(q, h, body, idem, new Date().toISOString()));
+        ctx.waitUntil(runMail(env, ctx));
         return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
       }
 
@@ -155,14 +177,18 @@ export default {
       // --- správce ---
       if (url.pathname === '/api/admin/orders' && request.method === 'GET') {
         await requireAdmin(request, env);
-        const rows = await withClient(env, ctx, (q) => adminListOrders(q));
-        return json(request, env, 200, { orders: rows }, { 'Cache-Control': 'no-store' });
+        const { rows, prices } = await withClient(env, ctx, async (q) => {
+          const [p] = await q(`SELECT lunch_price_player_czk AS player, lunch_price_staff_czk AS staff FROM tournament LIMIT 1`);
+          return { rows: await adminListOrders(q), prices: p };
+        });
+        return json(request, env, 200, { orders: rows, prices }, { 'Cache-Control': 'no-store' });
       }
       const m = url.pathname.match(/^\/api\/admin\/orders\/([A-Z]{2,4})$/);
       if (m && request.method === 'PUT') {
         const admin = await requireAdmin(request, env);
         const body = await readJson(request);
         const res = await withClient(env, ctx, (q) => adminSaveOrder(q, m[1], body, `admin:${admin.email}`, new Date().toISOString()));
+        ctx.waitUntil(runMail(env, ctx));
         return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
       }
       if (url.pathname === '/api/admin/order-links' && request.method === 'POST') {
@@ -172,6 +198,42 @@ export default {
         const links = await withClient(env, ctx, (q) => adminGenerateLinks(q, keys, `admin:${admin.email}`, new Date().toISOString()));
         return json(request, env, 200, { links }, { 'Cache-Control': 'no-store' });
       }
+      // --- pošta ---
+      if (url.pathname === '/api/admin/gmail/callback' && request.method === 'GET') {
+        const admin = `${env.AUTH_ORIGIN}${env.ADMIN_PATH}`;
+        try {
+          const r = await withClient(env, ctx, (q) => finishOAuth(env, q, request.url));
+          return Response.redirect(`${admin}?gmail=ok&email=${encodeURIComponent(r.email)}`, 302);
+        } catch (e) {
+          const msg = e instanceof ApiError ? e.message : 'Párování Gmailu se nepovedlo.';
+          return Response.redirect(`${admin}?gmail=error&msg=${encodeURIComponent(msg)}`, 302);
+        }
+      }
+      if (url.pathname === '/api/admin/gmail/start' && request.method === 'POST') {
+        await requireAdmin(request, env);
+        return json(request, env, 200, await withClient(env, ctx, (q) => startOAuth(env, q, request.url)));
+      }
+      if (url.pathname === '/api/admin/mail' && request.method === 'GET') {
+        await requireAdmin(request, env);
+        const st = await withClient(env, ctx, (q) => mailStatus(q));
+        return json(request, env, 200, { ...st, mode: env.MAIL_MODE || 'test', testRecipients: env.MAIL_TEST_RECIPIENTS || '', summaryAt: env.SUMMARY_AT || '2026-12-13T07:00:00Z' }, { 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/api/admin/mail/test' && request.method === 'POST') {
+        const admin = await requireAdmin(request, env);
+        const body = await readJson(request);
+        await withClient(env, ctx, (q) => queueTest(q, body?.kind === 'summary' ? 'summary' : 'mail', admin.email));
+        ctx.waitUntil(runMail(env, ctx));
+        return json(request, env, 200, { ok: true });
+      }
+      const mm = url.pathname.match(/^\/api\/admin\/mail\/(\d+)\/(retry|mark-sent)$/);
+      if (mm && request.method === 'POST') {
+        const admin = await requireAdmin(request, env);
+        const r = await withClient(env, ctx, (q) => adminMailAction(q, Number(mm[1]), mm[2], `admin:${admin.email}`));
+        if (!r.ok) throw new ApiError(409, 'Tuto zprávu teď nelze takto změnit.');
+        ctx.waitUntil(runMail(env, ctx));
+        return json(request, env, 200, r);
+      }
+
       if (url.pathname === '/api/admin/me' && request.method === 'GET') {
         const admin = await requireAdmin(request, env);
         return json(request, env, 200, { email: admin.email });
