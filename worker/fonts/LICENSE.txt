@@ -1,0 +1,6 @@
+DejaVu Sans (DejaVuSans.ttf, DejaVuSans-Bold.ttf)
+Fonts are (c) Bitstream (see below). DejaVu changes are in public domain.
+Bitstream Vera Fonts Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved.
+Permission is granted to use, copy, embed and distribute the fonts, including in
+documents, under the Bitstream Vera / DejaVu license: https://dejavu-fonts.github.io/License.html
+Fonty se vkládají (subset) do PDF zápisu turnaje kvůli české diakritice.

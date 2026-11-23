@@ -111,5 +111,6 @@ export function buildPublicModel(raw) {
     teams, blocks, matches, groups, lunches, orders,
     tips: (raw.tips || []).map((x) => ({ id: x.id, title: x.title, body: x.body, address: x.address, url: x.url })),
     finalDone: matches.some((m) => m.place === 1 && m.winner !== null),
+    reportReady: matches.some((m) => m.place === 1 && m.winner !== null),
   };
 }

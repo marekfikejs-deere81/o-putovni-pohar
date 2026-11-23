@@ -7,6 +7,11 @@ account_id = "56139aff8f3da503f6c2610b2d545ba7"
 workers_dev = true
 preview_urls = false
 
+[[rules]]
+type = "Data"
+globs = ["**/*.ttf"]
+fallthrough = false
+
 [vars]
 ENVIRONMENT = "test"
 NEON_AUTH_URL = "https://ep-little-silence-bhp5b2vh.neonauth.c-10.eu-central-1.aws.neon.tech/neondb/auth"

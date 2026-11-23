@@ -10,6 +10,9 @@ import {
 import { startOAuth, finishOAuth, gmailSend } from './gmail.js';
 import { savePeriod, deletePeriod, setShootout, setLots, clearLots, setManualOrder, shiftSchedule, updateTeam, addTip, deleteTip, auditLog } from './results.js';
 import { processOutbox, maybeQueueSummary, queueTest, mailStatus, adminMailAction } from './mail.js';
+import { reportPdf } from './report.js';
+import fontRegular from '../fonts/DejaVuSans.ttf';
+import fontBold from '../fonts/DejaVuSans-Bold.ttf';
 import { requireAdmin as requireAdminSession, login, logout, requestPasswordReset, resetPassword, signUpOwner } from './auth.js';
 
 const requireAdmin = (request, env) => requireAdminSession(request, env, db(env));
@@ -175,6 +178,18 @@ export default {
       }
       if (url.pathname === '/api/health' && request.method === 'GET') return await health(request, env);
       if (url.pathname === '/api/public' && request.method === 'GET') return await publicModel(request, env);
+      if (url.pathname === '/api/report.pdf' && request.method === 'GET') {
+        const r = await reportPdf(db(env), { regular: fontRegular, bold: fontBold });
+        if (!r) throw new ApiError(404, 'Zápis turnaje bude k dispozici po potvrzení vítěze finále.');
+        return new Response(r.bytes, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf', ...SECURITY_HEADERS, ...corsHeaders(request, env),
+            'Content-Disposition': 'attachment; filename="zapis-o-putovni-pohar-2026.pdf"',
+            'Cache-Control': 'no-cache', 'X-Revision': String(r.revision),
+          },
+        });
+      }
       // --- objednávka týmu (token v hlavičce, ne v URL) ---
       if (url.pathname === '/api/order' && request.method === 'GET') {
         const h = await orderTokenHash(request);
