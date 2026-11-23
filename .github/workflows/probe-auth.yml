@@ -1,0 +1,36 @@
+name: Průzkum Neon Auth (jen čtení)
+
+on:
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Auth URL (veřejná)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Veřejné endpointy
+        env:
+          BASE: ${{ inputs.base }}
+        run: |
+          for p in /ok /jwks /.well-known/jwks.json /.well-known/openid-configuration /get-session /token; do
+            echo "=== GET $p"
+            curl -s -o body.txt -w 'HTTP %{http_code} | %{content_type}\n' "$BASE$p"
+            head -c 600 body.txt; echo; echo
+          done
+          echo "=== CORS preflight sign-in z GitHub Pages"
+          curl -s -o /dev/null -D - -X OPTIONS "$BASE/sign-in/email" \
+            -H 'Origin: https://marekfikejs-deere81.github.io' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: content-type' | grep -i -E '^(HTTP|access-control)'
+          echo "=== sign-in se špatným heslem (tvar chybové odpovědi, hlavičky)"
+          curl -s -D headers.txt -o body.txt -X POST "$BASE/sign-in/email" \
+            -H 'Origin: https://marekfikejs-deere81.github.io' -H 'Content-Type: application/json' \
+            -d '{"email":"neexistuje@example.com","password":"spatne-heslo-123"}'
+          grep -i -E '^(HTTP|access-control|set-auth|set-cookie)' headers.txt | sed -E 's/(=)[^;]{8,}/\1…/'
+          head -c 400 body.txt; echo
