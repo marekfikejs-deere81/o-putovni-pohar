@@ -293,7 +293,7 @@ export default {
       }
       // --- pošta ---
       if (url.pathname === '/api/admin/gmail/callback' && request.method === 'GET') {
-        const admin = `${env.AUTH_ORIGIN}${env.ADMIN_PATH}`;
+        const admin = `${env.PUBLIC_ORIGIN || env.AUTH_ORIGIN}${env.ADMIN_PATH}`;
         try {
           const r = await withClient(env, ctx, (q) => finishOAuth(env, q, request.url));
           return Response.redirect(`${admin}?gmail=ok&email=${encodeURIComponent(r.email)}`, 302);

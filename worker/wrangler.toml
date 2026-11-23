@@ -16,8 +16,10 @@ fallthrough = false
 ENVIRONMENT = "test"
 NEON_AUTH_URL = "https://ep-little-silence-bhp5b2vh.neonauth.c-10.eu-central-1.aws.neon.tech/neondb/auth"
 OWNER_EMAIL = "marek.fikejs@gmail.com"
+# Origin, které Worker posílá do Neon Auth (musí být v Neon → Auth → Domains).
 AUTH_ORIGIN = "https://marekfikejs-deere81.github.io"
-ADMIN_PATH = "/o-putovni-pohar/admin.html"
+PUBLIC_ORIGIN = "https://www.vlasimskypohar.cz"
+ADMIN_PATH = "/admin.html"
 MAIL_MODE = "test"
 MAIL_TEST_RECIPIENTS = "marek.fikejs@gmail.com"
 SUMMARY_AT = "2026-12-13T07:00:00Z"
@@ -52,8 +54,10 @@ crons = ["0 * * * *"]
 ENVIRONMENT = "production"
 NEON_AUTH_URL = "https://ep-round-brook-bhiaq2h6.neonauth.c-10.eu-central-1.aws.neon.tech/neondb/auth"
 OWNER_EMAIL = "marek.fikejs@gmail.com"
+# Origin, které Worker posílá do Neon Auth (musí být v Neon → Auth → Domains).
 AUTH_ORIGIN = "https://marekfikejs-deere81.github.io"
-ADMIN_PATH = "/o-putovni-pohar/admin.html"
+PUBLIC_ORIGIN = "https://www.vlasimskypohar.cz"
+ADMIN_PATH = "/admin.html"
 MAIL_MODE = "test"
 MAIL_TEST_RECIPIENTS = "marek.fikejs@gmail.com"
 SUMMARY_AT = "2026-12-13T07:00:00Z"

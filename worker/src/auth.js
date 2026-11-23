@@ -110,7 +110,7 @@ export async function logout(env, session) {
 export async function requestPasswordReset(env, body) {
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email) throw new ApiError(400, 'Vyplň e-mail.');
-  const redirectTo = `${env.AUTH_ORIGIN || 'https://marekfikejs-deere81.github.io'}${env.ADMIN_PATH || '/o-putovni-pohar/admin.html'}`;
+  const redirectTo = `${env.PUBLIC_ORIGIN || env.AUTH_ORIGIN}${env.ADMIN_PATH || '/admin.html'}`;
   await fetch(`${authBase(env)}/request-password-reset`, {
     method: 'POST', headers: authHeaders(env), body: JSON.stringify({ email, redirectTo }),
   }).catch(() => {});
