@@ -21,7 +21,7 @@
   .narrow{max-width:420px;margin:30px auto}
   h2{margin:0 0 12px;font-size:18px}
   label{display:block;font-weight:600;margin:10px 0 4px}
-  input,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+  input,textarea,select{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:#fff;min-height:44px}
   .btn{display:inline-block;border:0;border-radius:10px;background:var(--blue);color:#fff;font:inherit;font-weight:700;padding:10px 14px;cursor:pointer}
   .btn.block{display:block;width:100%;height:46px;margin-top:14px}
   .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
@@ -42,22 +42,23 @@
   .linkrow .name{flex:1;font-weight:600}
   .linkrow input{font-size:12px;padding:6px 8px}
   .edit{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .tabs{display:flex;gap:6px;margin-bottom:12px}
+  .tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
   .tabs button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font:inherit;cursor:pointer}
   .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-  @media (max-width:640px){ .hide-m{display:none} }
+  @media (max-width:640px){ .hide-m{display:none} header .who{display:none} header h1{font-size:16px} }
 </style>
 </head>
 <body>
 <header>
   <img src="loga/web/VLA.png" alt="">
-  <h1>Admin · O putovní pohár</h1>
+  <h1>Admin turnaje</h1>
   <span class="who" id="who"></span>
   <button id="logout" hidden>Odhlásit</button>
 </header>
 <main id="app"><div class="card narrow">Načítání…</div></main>
 
 <script type="module">
+import { renderResults, renderOrder, renderSchedule, renderTeams, renderTips, renderAudit } from './admin-turnaj.js';
 const app = document.getElementById('app');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const czk = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Kč`;
@@ -72,7 +73,7 @@ let prices = { player: 140, staff: 170 };
 const rowPrice = (r) => r.players * prices.player + r.staff * prices.staff;
 let flash = null;
 let generated = null; // [{key,label,token}] – jen v paměti, po obnovení stránky zmizí
-let tab = 'obedy';
+let tab = 'vysledky';
 
 async function call(method, path, body) {
   const headers = {};
@@ -171,8 +172,13 @@ function renderReset(token) {
 // ---------- admin: obědy ----------
 const teamLink = (token) => `${location.origin}${location.pathname.replace(/admin\.html$/, '')}obedy.html#t=${token}`;
 
-const tabsHtml = () => `<div class="tabs"><button data-tab="obedy" class="${tab === 'obedy' ? 'on' : ''}">Obědy</button><button data-tab="posta" class="${tab === 'posta' ? 'on' : ''}">Pošta</button></div>`;
-function wireTabs() { app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { tab = b.dataset.tab; renderAdmin(); }); }
+const TABS = [['vysledky', 'Výsledky'], ['poradi', 'Pořadí a los'], ['rozpis', 'Rozpis'], ['obedy', 'Obědy'], ['posta', 'Pošta'], ['tymy', 'Týmy'], ['tipy', 'Tipy'], ['historie', 'Historie']];
+const tabsHtml = () => `<div class="tabs">${TABS.map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}</button>`).join('')}</div>
+  <div class="muted" style="margin:-4px 0 10px"><a href="index.html" target="_blank">Veřejný web</a> · <a href="stadion.html" target="_blank">Stadion</a></div>`;
+const ctx = { call: (...a) => call(...a), esc, fmt, czk, flash: (t, m) => { flash = { t, m }; }, head: () => headHtml() };
+const headHtml = () => `${banner()}${tabsHtml()}`;
+function wireTabs() {}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; renderAdmin(); window.scrollTo(0, 0); } });
 
 const MAIL_STATUS = { pending: ['čeká', 'no'], sending: ['odesílá se', 'no'], sent: ['odesláno', 'ok'], failed: ['chyba', 'err'], unknown: ['ke kontrole', 'err'] };
 async function renderMail() {
@@ -220,6 +226,8 @@ async function renderMail() {
 async function renderAdmin() {
   setHeader();
   if (tab === 'posta') return renderMail();
+  const T = { vysledky: renderResults, poradi: renderOrder, rozpis: renderSchedule, tymy: renderTeams, tipy: renderTips, historie: renderAudit }[tab];
+  if (T) { await T(app, ctx, ''); return; }
   app.innerHTML = `<div class="card">Načítání objednávek…</div>`;
   let rows;
   try { const d = await call('GET', '/api/admin/orders'); rows = d.orders; if (d.prices) prices = d.prices; }

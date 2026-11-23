@@ -8,6 +8,7 @@ import {
   hashToken, isTokenShape, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
 } from './orders.js';
 import { startOAuth, finishOAuth, gmailSend } from './gmail.js';
+import { savePeriod, deletePeriod, setShootout, setLots, clearLots, setManualOrder, shiftSchedule, updateTeam, addTip, deleteTip, auditLog } from './results.js';
 import { processOutbox, maybeQueueSummary, queueTest, mailStatus, adminMailAction } from './mail.js';
 import { requireAdmin as requireAdminSession, login, logout, requestPasswordReset, resetPassword, signUpOwner } from './auth.js';
 
@@ -109,6 +110,41 @@ async function health(request, env) {
     ok: true, env: env.ENVIRONMENT || 'unknown', revision: Number(r?.revision ?? -1), teams: r?.teams ?? 0,
     dbMs: Date.now() - started, auth: Boolean(env.NEON_AUTH_URL), time: new Date().toISOString(),
   });
+}
+
+/** Minuta dne turnaje v Praze; mimo den turnaje −1 (vše je „budoucí“). */
+function tournamentMinute(env) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Prague', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  const day = `${p.year}-${p.month}-${p.day}`;
+  return day === (env.TOURNAMENT_DAY || '2026-12-28') ? Number(p.hour) * 60 + Number(p.minute) : -1;
+}
+
+/** Trasy správce pro výsledky a řízení turnaje. Vrací Response, nebo null. */
+async function adminResultRoutes(request, env, ctx, url) {
+  const R = [
+    ['PUT', /^\/api\/admin\/matches\/(\d+)\/periods\/([12])$/, (q, a, m, b) => savePeriod(q, m[1], m[2], b, a)],
+    ['DELETE', /^\/api\/admin\/matches\/(\d+)\/periods\/([12])$/, (q, a, m) => deletePeriod(q, m[1], m[2], a)],
+    ['PUT', /^\/api\/admin\/matches\/(\d+)\/shootout$/, (q, a, m, b) => setShootout(q, m[1], b, a)],
+    ['PUT', /^\/api\/admin\/lots\/([AB])$/, (q, a, m, b) => setLots(q, m[1], b, a)],
+    ['DELETE', /^\/api\/admin\/lots\/([AB])$/, (q, a, m) => clearLots(q, m[1], a)],
+    ['PUT', /^\/api\/admin\/manual-order$/, (q, a, m, b) => setManualOrder(q, b, a)],
+    ['POST', /^\/api\/admin\/schedule\/preview$/, (q, a, m, b) => shiftSchedule(q, b, a, tournamentMinute(env), false)],
+    ['POST', /^\/api\/admin\/schedule\/apply$/, (q, a, m, b) => shiftSchedule(q, b, a, tournamentMinute(env), true)],
+    ['PUT', /^\/api\/admin\/teams\/(\d+)$/, (q, a, m, b) => updateTeam(q, m[1], b, a)],
+    ['POST', /^\/api\/admin\/tips$/, (q, a, m, b) => addTip(q, b, a)],
+    ['DELETE', /^\/api\/admin\/tips\/(\d+)$/, (q, a, m) => deleteTip(q, m[1], a)],
+    ['GET', /^\/api\/admin\/audit$/, (q) => auditLog(q).then((rows) => ({ rows }))],
+  ];
+  for (const [method, re, fn] of R) {
+    const m = url.pathname.match(re);
+    if (!m || request.method !== method) continue;
+    const admin = await requireAdmin(request, env);
+    const body = ['PUT', 'POST'].includes(method) ? await readJson(request) : null;
+    const res = await withClient(env, ctx, (q) => fn(q, `admin:${admin.email}`, m, body));
+    return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+  }
+  return null;
 }
 
 /** Souhrn (pokud nastal čas) a odeslání splatné pošty. Volá cron každou hodinu (šetří výpočetní hodiny Neonu) a hned po každém zápisu. */
@@ -233,6 +269,9 @@ export default {
         ctx.waitUntil(runMail(env, ctx));
         return json(request, env, 200, r);
       }
+
+      const resultRes = await adminResultRoutes(request, env, ctx, url);
+      if (resultRes) return resultRes;
 
       if (url.pathname === '/api/admin/me' && request.method === 'GET') {
         const admin = await requireAdmin(request, env);
