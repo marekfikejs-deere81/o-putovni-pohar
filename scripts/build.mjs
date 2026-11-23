@@ -14,8 +14,8 @@ for (const [src, dst] of [['web', '.'], ['shared', 'shared'], ['data', 'data'], 
 cpSync('worker/fonts', `${out}/fonts`, { recursive: true });
 
 // Veřejná konfigurace (jen veřejné URL, nikdy tajemství).
-// Do ostrého spuštění míří web na testovací API; při přepnutí stačí změnit DEFAULT_API.
-const DEFAULT_API = 'https://o-putovni-pohar-api-test.marek-fikejs.workers.dev';
+// Web míří na ostré API. Testovací API: https://o-putovni-pohar-api-test.marek-fikejs.workers.dev
+const DEFAULT_API = 'https://o-putovni-pohar-api.marek-fikejs.workers.dev'; // OSTRÝ provoz od 23. 11. 2026
 const config = { apiBase: process.env.PUBLIC_API_BASE || DEFAULT_API, builtAt: new Date().toISOString(), commit: process.env.GITHUB_SHA || 'local' };
 writeFileSync(`${out}/config.json`, JSON.stringify(config, null, 2));
 
