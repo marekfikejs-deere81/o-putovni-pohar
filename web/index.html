@@ -338,11 +338,11 @@ function pageObedy() {
 // ---------- Propozice a Pro rodiče ----------
 function pagePropozice() {
   const pdf = M.propozicePdf ? `<a class="pdf" href="${api}/api/propozice.pdf?v=${M.propozicePdf.version}" target="_blank" rel="noopener">Stáhnout propozice (PDF)</a>` : '';
-  return `<h2>Propozice</h2>${pdf}${fillPropozice(M.tournament.lunch).map((s) => `<details><summary>${esc(s.title)}</summary>
+  return `<h2>Propozice</h2>${fillPropozice(M.tournament.lunch).map((s) => `<details><summary>${esc(s.title)}</summary>
     ${s.items ? `<dl>${s.items.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>` : ''}
     ${(s.text || []).map((p) => `<p>${esc(p)}</p>`).join('')}
     ${s.list ? `<ul>${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
-    ${(s.after || []).map((p) => `<p>${esc(p)}</p>`).join('')}</details>`).join('')}`;
+    ${(s.after || []).map((p) => `<p>${esc(p)}</p>`).join('')}</details>`).join('')}<div style="margin-top:16px">${pdf}</div>`;
 }
 function pageRodice() {
   const tips = M.tips || [];
