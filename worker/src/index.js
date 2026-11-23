@@ -1,9 +1,13 @@
 // Cloudflare Worker – HTTPS API turnaje O putovní pohár.
 // Veřejné čtení bez přihlášení; každý zápis vyžaduje ověřenou identitu z Neon Auth a záznam v admin_user.
-import { neon } from '@neondatabase/serverless';
+import { neon, Client } from '@neondatabase/serverless';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { buildPublicModel } from '../../shared/public-model.js';
 import { loadPublicRaw } from './queries.js';
+import { ApiError } from './errors.js';
+import {
+  hashToken, isTokenShape, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
+} from './orders.js';
 
 const TOURNAMENT_ID = 'vlasim-2026';
 
@@ -16,7 +20,7 @@ function corsHeaders(request, env) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, If-None-Match, Idempotency-Key',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, If-None-Match, Idempotency-Key, X-Order-Token',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Expose-Headers': 'ETag, X-Revision',
     'Access-Control-Max-Age': '86400',
@@ -37,10 +41,6 @@ function json(request, env, status, body, extra = {}) {
   });
 }
 
-/** Chyba pro uživatele: česká hláška, bez vnitřních detailů. */
-class ApiError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
-}
 
 async function sha1(text) {
   const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
@@ -51,6 +51,34 @@ function db(env) {
   if (!env.DATABASE_URL) throw new ApiError(503, 'Databáze není nastavená.');
   const sql = neon(env.DATABASE_URL);
   return (text, params = []) => sql.query(text, params);
+}
+
+/** Jedno připojení přes WebSocket – nutné pro transakce (zápisy). */
+async function withClient(env, ctx, fn) {
+  if (!env.DATABASE_URL) throw new ApiError(503, 'Databáze není nastavená.');
+  const client = new Client(env.DATABASE_URL);
+  await client.connect();
+  try {
+    return await fn(async (text, params = []) => (await client.query(text, params)).rows);
+  } finally {
+    ctx.waitUntil(client.end());
+  }
+}
+
+async function readJson(request) {
+  const len = Number(request.headers.get('Content-Length') || 0);
+  if (len > 10_000) throw new ApiError(413, 'Požadavek je příliš velký.');
+  try {
+    return await request.json();
+  } catch {
+    throw new ApiError(400, 'Neplatná data formuláře.');
+  }
+}
+
+async function orderTokenHash(request) {
+  const token = request.headers.get('X-Order-Token');
+  if (!isTokenShape(token)) throw new ApiError(404, 'Odkaz pro objednávku neplatí. Požádej pořadatele o nový.');
+  return hashToken(token);
 }
 
 // ---------- ověření správce ----------
@@ -103,7 +131,7 @@ async function health(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     try {
       if (request.method === 'OPTIONS') {
@@ -111,6 +139,40 @@ export default {
       }
       if (url.pathname === '/api/health' && request.method === 'GET') return await health(request, env);
       if (url.pathname === '/api/public' && request.method === 'GET') return await publicModel(request, env);
+      // --- objednávka týmu (token v hlavičce, ne v URL) ---
+      if (url.pathname === '/api/order' && request.method === 'GET') {
+        const h = await orderTokenHash(request);
+        const view = await withClient(env, ctx, (q) => teamOrderView(q, h, new Date().toISOString()));
+        return json(request, env, 200, view, { 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/api/order' && request.method === 'POST') {
+        const h = await orderTokenHash(request);
+        const body = await readJson(request);
+        const idem = request.headers.get('Idempotency-Key');
+        const res = await withClient(env, ctx, (q) => submitTeamOrder(q, h, body, idem, new Date().toISOString()));
+        return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
+
+      // --- správce ---
+      if (url.pathname === '/api/admin/orders' && request.method === 'GET') {
+        await requireAdmin(request, env);
+        const rows = await withClient(env, ctx, (q) => adminListOrders(q));
+        return json(request, env, 200, { orders: rows }, { 'Cache-Control': 'no-store' });
+      }
+      const m = url.pathname.match(/^\/api\/admin\/orders\/([A-Z]{2,4})$/);
+      if (m && request.method === 'PUT') {
+        const admin = await requireAdmin(request, env);
+        const body = await readJson(request);
+        const res = await withClient(env, ctx, (q) => adminSaveOrder(q, m[1], body, `admin:${admin.email}`, new Date().toISOString()));
+        return json(request, env, 200, res, { 'Cache-Control': 'no-store' });
+      }
+      if (url.pathname === '/api/admin/order-links' && request.method === 'POST') {
+        const admin = await requireAdmin(request, env);
+        const body = await readJson(request);
+        const keys = Array.isArray(body?.keys) ? body.keys.filter((k) => /^[A-Z]{2,4}$/.test(k)) : null;
+        const links = await withClient(env, ctx, (q) => adminGenerateLinks(q, keys, `admin:${admin.email}`, new Date().toISOString()));
+        return json(request, env, 200, { links }, { 'Cache-Control': 'no-store' });
+      }
       if (url.pathname === '/api/admin/me' && request.method === 'GET') {
         const admin = await requireAdmin(request, env);
         return json(request, env, 200, { email: admin.email });
@@ -121,7 +183,7 @@ export default {
       }
       throw new ApiError(404, 'Stránka neexistuje.');
     } catch (e) {
-      if (e instanceof ApiError) return json(request, env, e.status, { error: e.message });
+      if (e instanceof ApiError) return json(request, env, e.status, { error: e.message, ...(e.data || {}) });
       console.error(JSON.stringify({ msg: 'unhandled', path: url.pathname, error: String(e?.message || e) }));
       return json(request, env, 500, { error: 'Na serveru došlo k chybě. Zkus to prosím znovu.' });
     }

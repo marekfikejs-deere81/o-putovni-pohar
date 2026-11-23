@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<link rel="icon" href="loga/web/VLA.png">
+<title>Objednávka obědů · O putovní pohár</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--navy:#10335c;--blue:#1f5fae;--ink:#10233f;--muted:#5d6f8a;--line:#dfe6f0;--bg:#f4f6fa;--ok:#1e7a46;--err:#b42318}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:16px;line-height:1.4}
+  header{background:var(--navy);color:#fff;padding:14px 16px;display:flex;gap:12px;align-items:center}
+  header img{width:44px;height:44px;background:#fff;border-radius:10px;object-fit:contain;padding:3px}
+  header small{opacity:.8;font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+  header h1{margin:0;font-size:19px}
+  main{max-width:520px;margin:0 auto;padding:14px 14px 40px}
+  .card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,35,63,.06)}
+  .team{display:flex;align-items:center;gap:12px}
+  .crests{display:flex;gap:6px}
+  .crests img{width:52px;height:52px;object-fit:contain}
+  .team h2{margin:0;font-size:20px}
+  .meta{color:var(--muted);font-size:14px;margin-top:2px}
+  .deadline{background:#fff7e0;border:1px solid #f0d58a;border-radius:10px;padding:8px 12px;font-size:14px;margin-top:12px}
+  .menu{font-size:14px;color:var(--muted);margin-top:8px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+  .row+.row{border-top:1px solid var(--line)}
+  .row label{font-weight:600}
+  .stepper{display:flex;align-items:center;gap:6px}
+  .stepper button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:22px;color:var(--blue);cursor:pointer}
+  .stepper input{width:62px;height:44px;text-align:center;font-size:20px;font-weight:700;border:1px solid var(--line);border-radius:10px}
+  .total{display:flex;justify-content:space-between;align-items:baseline;background:#eef4fc;border-radius:10px;padding:10px 12px;margin-top:8px;font-weight:700}
+  .total span:last-child{font-size:20px}
+  .field{margin-top:14px}
+  .field label{display:block;font-weight:600;margin-bottom:6px}
+  .field textarea,.field input[type=email]{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit}
+  .field textarea{min-height:64px;resize:vertical}
+  .hint{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:4px}
+  .error{color:var(--err);font-size:14px;margin-top:4px}
+  .invalid{border-color:var(--err)!important}
+  .btn{display:block;width:100%;height:52px;border:0;border-radius:12px;background:var(--blue);color:#fff;font-size:17px;font-weight:700;cursor:pointer;margin-top:16px}
+  .btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .summary dt{color:var(--muted);font-size:14px}
+  .summary dd{margin:0 0 8px;font-weight:600}
+  .banner{border-radius:12px;padding:12px 14px;margin-bottom:12px;font-weight:600}
+  .banner.ok{background:#e7f6ed;color:var(--ok)}
+  .banner.warn{background:#fff7e0;color:#7a5a00}
+  .banner.err{background:#fdecea;color:var(--err)}
+  .center{text-align:center;color:var(--muted);padding:40px 0}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:10px}
+</style>
+</head>
+<body>
+<header>
+  <img src="loga/web/VLA.png" alt="">
+  <div><small>Vánoční turnaj · 28.&nbsp;12.&nbsp;2026</small><h1>Objednávka obědů</h1></div>
+</header>
+<main id="app"><div class="center">Načítání…</div></main>
+<footer>HC Rytíři Vlašim · O putovní pohár</footer>
+
+<script type="module">
+const app = document.getElementById('app');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const czk = (n) => `${String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} Kč`;
+const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const NOTE_MAX = 100;
+
+const token = new URLSearchParams(location.hash.slice(1)).get('t');
+window.addEventListener('hashchange', () => location.reload());
+let api = '';
+let view = null;
+let draft = { players: 0, staff: 0, note: '', email: '' };
+let errors = {};
+
+async function call(method, body, idem) {
+  const headers = { 'X-Order-Token': token || '' };
+  if (body) headers['Content-Type'] = 'application/json';
+  if (idem) headers['Idempotency-Key'] = idem;
+  let res;
+  try {
+    res = await fetch(`${api}/api/order`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  } catch {
+    throw Object.assign(new Error('Nepodařilo se spojit se serverem. Zkontroluj připojení a zkus to znovu.'), { status: 0 });
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || 'Něco se nepovedlo.'), { status: res.status, data });
+  return data;
+}
+
+function teamCard() {
+  const lunch = view.lunch.map((l) => `${hhmm(l.from)}–${hhmm(l.to)}`).join(', ');
+  return `<section class="card">
+    <div class="team">
+      <div class="crests">${view.teams.map((t) => `<img src="${esc(t.logo)}" alt="${esc(t.name)}">`).join('')}</div>
+      <div><h2>${esc(view.label).replace(/ \+ /g, '\u00a0+\u00a0').replace(/ ([AB])$/, '\u00a0$1')}</h2>
+        <div class="meta">${view.teams.length > 1 ? 'Společná objednávka pro obě družstva · ' : ''}Oběd ${esc(lunch)}</div></div>
+    </div>
+    <div class="menu"><b>Menu:</b> ${esc(view.menu)} · ${czk(view.price)} za porci</div>
+    ${view.order || view.closed ? '' : `<div class="deadline">Objednávky do <b>12.&nbsp;12.&nbsp;2026 včetně</b>. Odeslaná objednávka je závazná, změnu řeší pořadatel.</div>`}
+  </section>`;
+}
+
+function summary(o) {
+  const n = o.players + o.staff;
+  return `<dl class="summary">
+    <dt>Hráči</dt><dd>${o.players}</dd>
+    <dt>Realizační tým</dt><dd>${o.staff}</dd>
+    <dt>Celkem</dt><dd>${n} ${n === 1 ? 'porce' : n >= 2 && n <= 4 ? 'porce' : 'porcí'} · ${czk(n * view.price)}</dd>
+    <dt>Poznámka (alergie, diety)</dt><dd>${esc(o.note) || '—'}</dd>
+    <dt>E-mail pro potvrzení</dt><dd>${esc(o.email)}</dd>
+  </dl>`;
+}
+
+function render(state = 'form', message = '') {
+  if (state === 'invalid') {
+    app.innerHTML = `<div class="banner err">${esc(message)}</div>
+      <section class="card">Odkaz pro objednávku obědů dostal každý tým od pořadatele. Pokud nefunguje, ozvi se: <b>Marek Fikejs, marek.fikejs@gmail.com</b>.</section>`;
+    return;
+  }
+  if (view.order) {
+    app.innerHTML = `${message ? `<div class="banner ok">${esc(message)}</div>` : ''}${teamCard()}
+      <section class="card"><h3 style="margin-top:0">Objednávka odeslána</h3>${summary(view.order)}
+      <div class="meta">Změnu objednávky domluv s pořadatelem: ${esc(view.organizer)}.</div></section>`;
+    return;
+  }
+  if (view.closed) {
+    app.innerHTML = `<div class="banner warn">Objednávky jsou uzavřené (uzávěrka 12.&nbsp;12.&nbsp;2026).</div>${teamCard()}
+      <section class="card">Tento tým objednávku neodeslal. Pokud oběd potřebujete, ozvi se pořadateli: <b>${esc(view.organizer)}</b>.</section>`;
+    return;
+  }
+  if (state === 'review') {
+    app.innerHTML = `${teamCard()}<section class="card"><h3 style="margin-top:0">Zkontroluj objednávku</h3>${summary(draft)}
+      <div class="banner warn" style="margin:8px 0 0">Po odeslání už objednávku nepůjde změnit. Změnu může udělat jen pořadatel.</div>
+      ${message ? `<div class="banner err" style="margin-top:12px">${esc(message)}</div>` : ''}
+      <button class="btn" id="send">Závazně odeslat</button>
+      <button class="btn secondary" id="back">Zpět k úpravě</button></section>`;
+    const idem = crypto.randomUUID().replace(/-/g, '');
+    document.getElementById('back').onclick = () => render('form');
+    document.getElementById('send').onclick = async (e) => {
+      e.target.disabled = true; e.target.textContent = 'Odesílám…';
+      try {
+        const r = await call('POST', draft, idem);
+        view.order = r.order;
+        render('form', 'Děkujeme, objednávka je odeslaná. Potvrzení přijde na zadaný e-mail.');
+      } catch (err) {
+        if (err.status === 409 || err.status === 403) { await load(); render('form', ''); return; }
+        if (err.status === 422) { errors = err.data?.fields || {}; render('form', err.message); return; }
+        render('review', err.message); // stejný požadavek lze bezpečně zopakovat
+      }
+    };
+    return;
+  }
+  // formulář
+  const n = (Number(draft.players) || 0) + (Number(draft.staff) || 0);
+  const noteLen = [...draft.note].length;
+  const step = (id, label, val) => `<div class="row"><label for="${id}">${label}</label>
+    <div class="stepper"><button type="button" data-step="${id}" data-d="-1" aria-label="Ubrat">−</button>
+    <input id="${id}" inputmode="numeric" pattern="[0-9]*" value="${esc(val)}" class="${errors[id] ? 'invalid' : ''}" aria-label="${label}">
+    <button type="button" data-step="${id}" data-d="1" aria-label="Přidat">+</button></div></div>
+    ${errors[id] ? `<div class="error">${esc(errors[id])}</div>` : ''}`;
+  app.innerHTML = `${message ? `<div class="banner err">${esc(message)}</div>` : ''}${teamCard()}
+    <form class="card" id="f" novalidate>
+      ${step('players', 'Hráči', draft.players)}
+      ${step('staff', 'Realizační tým', draft.staff)}
+      <div class="total"><span>Celkem ${n} × ${czk(view.price)}</span><span>${czk(n * view.price)}</span></div>
+      <div class="field"><label for="note">Poznámka – alergie, diety <span style="font-weight:400;color:var(--muted)">(nepovinné)</span></label>
+        <textarea id="note" maxlength="${NOTE_MAX}" class="${errors.note ? 'invalid' : ''}">${esc(draft.note)}</textarea>
+        <div class="hint"><span>např. 2× bezlepková</span><span id="cnt">${noteLen}/${NOTE_MAX}</span></div>
+        ${errors.note ? `<div class="error">${esc(errors.note)}</div>` : ''}</div>
+      <div class="field"><label for="email">E-mail pro potvrzení</label>
+        <input id="email" type="email" autocomplete="email" value="${esc(draft.email)}" class="${errors.email ? 'invalid' : ''}" placeholder="trener@example.cz">
+        ${errors.email ? `<div class="error">${esc(errors.email)}</div>` : ''}</div>
+      <button class="btn" type="submit">Pokračovat ke kontrole</button>
+    </form>`;
+  const sync = () => {
+    draft.players = document.getElementById('players').value.trim();
+    draft.staff = document.getElementById('staff').value.trim();
+    draft.note = document.getElementById('note').value;
+    draft.email = document.getElementById('email').value.trim();
+  };
+  app.querySelectorAll('[data-step]').forEach((b) => b.onclick = () => {
+    sync();
+    const k = b.dataset.step;
+    draft[k] = Math.max(0, Math.min(99, (parseInt(draft[k], 10) || 0) + Number(b.dataset.d)));
+    errors[k] = undefined; render('form');
+  });
+  ['players', 'staff'].forEach((id) => document.getElementById(id).oninput = () => {
+    sync();
+    const tot = (parseInt(draft.players, 10) || 0) + (parseInt(draft.staff, 10) || 0);
+    app.querySelector('.total').innerHTML = `<span>Celkem ${tot} × ${czk(view.price)}</span><span>${czk(tot * view.price)}</span>`;
+  });
+  document.getElementById('note').oninput = (e) => { document.getElementById('cnt').textContent = `${[...e.target.value].length}/${NOTE_MAX}`; };
+  document.getElementById('f').onsubmit = (e) => {
+    e.preventDefault(); sync(); errors = {};
+    const intOk = (v) => /^\d{1,2}$/.test(String(v));
+    if (!intOk(draft.players)) errors.players = 'Zadej celé číslo 0 až 99.';
+    if (!intOk(draft.staff)) errors.staff = 'Zadej celé číslo 0 až 99.';
+    if ([...draft.note.trim()].length > NOTE_MAX) errors.note = `Poznámka může mít nejvýše ${NOTE_MAX} znaků.`;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(draft.email)) errors.email = draft.email ? 'E-mail nemá platný tvar.' : 'Vyplň e-mail pro potvrzení.';
+    if (Object.keys(errors).length) { render('form', 'Zkontroluj zvýrazněná pole.'); return; }
+    draft.players = Number(draft.players); draft.staff = Number(draft.staff); draft.note = draft.note.trim();
+    if (draft.players + draft.staff === 0 && !confirm('Opravdu objednat 0 porcí (tým oběd nechce)?')) return;
+    render('review');
+  };
+}
+
+async function load() {
+  view = await call('GET');
+}
+
+try {
+  const c = await fetch('config.json', { cache: 'no-store' }).then((r) => r.json());
+  api = c.apiBase || '';
+  if (!token) throw Object.assign(new Error('Chybí odkaz týmu.'), { status: 404 });
+  await load();
+  render('form');
+} catch (err) {
+  render('invalid', err.status === 404 ? 'Tento odkaz pro objednávku neplatí.' : err.message);
+}
+</script>
+</body>
+</html>

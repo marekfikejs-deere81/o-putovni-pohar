@@ -96,12 +96,18 @@ export function buildPublicModel(raw) {
     })
     .sort((a, b) => a.from - b.from);
 
+  const orders = (raw.orders || []).map((o) => ({
+    key: o.key, label: o.label, teams: o.teams.map(Number),
+    ordered: o.players !== null && o.players !== undefined,
+    players: o.players ?? null, staff: o.staff ?? null,
+  }));
+
   return {
     revision: Number(t.revision),
     tournament: {
       name: t.name, day: t.day, timeZone: t.time_zone,
       lunch: { price: t.lunch_price_czk, deadline: t.lunch_deadline, menu: t.lunch_menu },
     },
-    teams, blocks, matches, groups, lunches,
+    teams, blocks, matches, groups, lunches, orders,
   };
 }
