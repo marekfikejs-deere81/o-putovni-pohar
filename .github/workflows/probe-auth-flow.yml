@@ -29,12 +29,12 @@ jobs:
               if isinstance(x,list): return [r(i) for i in x]
               return x
           print(json.dumps(r(d),ensure_ascii=False)[:700])'; }
-          echo "=== sign-up (bez Origin)"
-          curl -s -D h1.txt -o b1.json -X POST "$BASE/sign-up/email" -H 'Content-Type: application/json' \
+          echo "=== sign-up (Origin GitHub Pages)"
+          curl -s -D h1.txt -o b1.json -X POST "$BASE/sign-up/email" -H 'Origin: https://marekfikejs-deere81.github.io' -H 'Content-Type: application/json' \
             -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\",\"name\":\"Probe\"}"
           head -1 h1.txt; redact < b1.json
-          echo "=== sign-in (bez Origin)"
-          curl -s -D h2.txt -o b2.json -X POST "$BASE/sign-in/email" -H 'Content-Type: application/json' \
+          echo "=== sign-in (Origin GitHub Pages)"
+          curl -s -D h2.txt -o b2.json -X POST "$BASE/sign-in/email" -H 'Origin: https://marekfikejs-deere81.github.io' -H 'Content-Type: application/json' \
             -d "{\"email\":\"$EMAIL\",\"password\":\"$PASS\"}"
           head -1 h2.txt; grep -i -E '^(set-auth|set-cookie)' h2.txt | sed -E 's/=([^;]{6})[^;]*/=\1…/'; redact < b2.json
           ST=$(python3 -c 'import json;print(json.load(open("b2.json")).get("token") or "")')
