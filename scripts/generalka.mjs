@@ -172,7 +172,7 @@ for (const [i, tab] of ['program', 'umisteni', 'rodice', 'obedy', 'propozice'].e
 }
 await pg1.click('nav [data-page=umisteni]'); await pg1.waitForTimeout(300);
 const order9 = await pg1.locator('.place h3').allTextContents();
-ok('Umístění podle času (finále poslední)', order9.at(-1) === 'O 1. místo', order9.join(', '));
+ok('Umístění: finále nahoře, o 9. místo dole', order9[0].startsWith('O 1. místo') && order9.at(-1).startsWith('O 9. místo'), order9.join(', '));
 // výpadek spojení a obnova
 await pg1.click('nav [data-page=prehled]');
 await pg1.route('**/api/public', (r) => r.abort());

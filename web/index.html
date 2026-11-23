@@ -76,6 +76,7 @@ em.hraje{display:block;font:700 10px system-ui;color:#07543c;font-style:normal;l
 .halves{width:auto;min-width:190px;margin:8px 0}
 .halves th,.halves td{padding:3px 10px}
 .place{background:#f5f9fc;border:1px solid #d8e4ed;border-radius:12px;padding:10px 12px;margin:10px 0}
+.place.now-block{margin:10px 0;padding:10px 12px;border-color:#40c38b;background:#eefaf4}
 .place h3{margin:0 0 4px}
 .final{font-weight:700;margin-top:6px}
 .final div{display:flex;gap:6px;align-items:center}
@@ -296,8 +297,9 @@ function pageProgram() {
 
 // ---------- Umístění ----------
 function pageUmisteni() {
-  // Podle času v programu (nahoře první utkání o umístění, dole finále), ve stejném čase plocha A, pak B.
-  const places = M.matches.filter((m) => m.place).sort((a, b) => blockOf(a).from - blockOf(b).from || a.rink.localeCompare(b.rink));
+  // Finále nahoře, o 9. místo dole. Právě hraná utkání jsou zvýrazněná a stránka na ně sjede.
+  const places = M.matches.filter((m) => m.place).sort((a, b) => a.place - b.place);
+  let anchor = false;
   const seeded = places.some((m) => m.home != null);
   return `<h2>O umístění</h2>${banner()}
     ${!seeded ? '<p class="note">Dvojice se doplní po dohrání obou skupin podle konečného pořadí.</p>' : ''}
@@ -308,7 +310,9 @@ function pageUmisteni() {
         const w = m.winner === 'home' ? m.home : m.away, l = m.winner === 'home' ? m.away : m.home;
         res = `<div class="final"><div>${m.place}. ${logo(team(w))} ${esc(team(w).name)}</div><div>${m.place + 1}. ${logo(team(l))} ${esc(team(l).name)}</div></div>`;
       }
-      return `<div class="place"><h3>O ${m.place}. místo</h3><small>${toHHMM(b.from)} · Plocha ${m.rink} · ${seedLabel(m.homeSeed)} × ${seedLabel(m.awaySeed)}</small>${fixture(m.id)}${res}</div>`;
+      const live = isLive(m), id = live && !anchor ? ' id="nyni"' : '';
+      if (live) anchor = true;
+      return `<div class="place${live ? ' now-block' : ''}"${id}><h3>O ${m.place}. místo${live ? '<em class="nyni">PRÁVĚ TEĎ</em>' : ''}</h3><small>${toHHMM(b.from)} · Plocha ${m.rink} · ${seedLabel(m.homeSeed)} × ${seedLabel(m.awaySeed)}</small>${fixture(m.id)}${res}</div>`;
     }).join('')}`;
 }
 
@@ -375,7 +379,7 @@ document.addEventListener('click', (e) => {
   const p = e.target.closest('[data-page]');
   if (p) {
     page = p.dataset.page; history.replaceState(null, '', `${location.search}#${page}`); render();
-    const now = page === 'program' && document.getElementById('nyni');
+    const now = (page === 'program' || page === 'umisteni') && document.getElementById('nyni');
     if (now) now.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
     return;
   }
@@ -400,7 +404,7 @@ async function load() {
       const first = !M;
       M = await res.json(); etag = res.headers.get('ETag');
       if (!$('dlg').open) render();
-      if (first && page === 'program') document.getElementById('nyni')?.scrollIntoView({ block: 'start' });
+      if (first && (page === 'program' || page === 'umisteni')) document.getElementById('nyni')?.scrollIntoView({ block: 'start' });
     }
     else if (res.status !== 304) throw new Error(String(res.status));
     lastOk = new Date(); failing = false;
