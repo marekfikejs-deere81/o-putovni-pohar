@@ -40,6 +40,7 @@ nav button{border:0;font-size:clamp(10.5px,2.9vw,13px);padding:6px 1px;line-heig
 .standings td:first-child,.standings th:first-child{width:1%;white-space:nowrap;padding-right:6px}
 .standings th:nth-child(2),.standings td:nth-child(2){text-align:left}
 .standings .rowteam{font-size:clamp(13px,3.6vw,15px)}
+.standings th.n,.standings td.n{padding-left:3px;padding-right:3px;min-width:1.7em;width:1%;text-align:center}
 .live,.live td{background:#dcf4e9}
 em.hraje{display:block;font:700 10px system-ui;color:#07543c;font-style:normal;letter-spacing:.02em}
 .matrixScroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -253,8 +254,9 @@ function matrix(g) {
 function standings(g) {
   const G = M.groups[g];
   const n = G.rows.length - 1;
-  return `<div class="matrixScroll"><table class="standings"><tr><th>Poř.</th><th>Tým</th><th>Odehráno</th><th>Skóre</th><th>Body</th></tr>
-    ${G.rows.map((r) => `<tr${playing(r.id) ? ' class="live"' : ''}><td>${G.started ? `${r.rank}.` : '–'}</td><td>${rowTeam(r.id)}${playing(r.id) ? '<em class="hraje">HRAJE</em>' : ''}</td><td>${r.played}/${n}</td><td>${G.started ? `${r.goalsFor}:${r.goalsAgainst}` : '–'}</td><td><b>${G.started ? r.points : '–'}</b></td></tr>`).join('')}
+  const v = (x) => (G.started ? x : '–');
+  return `<div class="matrixScroll"><table class="standings"><tr><th title="Pořadí">Poř.</th><th>Tým</th><th class="n" title="Zápasy">Z</th><th class="n" title="Vyhrané třetiny">V</th><th class="n" title="Remízové třetiny">R</th><th class="n" title="Prohrané třetiny">P</th><th>Skóre</th><th>Body</th></tr>
+    ${G.rows.map((r) => `<tr${playing(r.id) ? ' class="live"' : ''}><td>${G.started ? `${r.rank}.` : '–'}</td><td>${rowTeam(r.id)}${playing(r.id) ? '<em class="hraje">HRAJE</em>' : ''}</td><td class="n">${r.played}</td><td class="n">${v(r.wins)}</td><td class="n">${v(r.draws)}</td><td class="n">${v(r.losses)}</td><td>${G.started ? `${r.goalsFor}:${r.goalsAgainst}` : '–'}</td><td><b>${G.started ? r.points : '–'}</b></td></tr>`).join('')}
     </table></div>`;
 }
 function pagePrehled() {
@@ -269,7 +271,7 @@ function pagePrehled() {
     <div class="toggle"><button class="${view === 'krizova' ? 'on' : ''}" data-view="krizova" aria-pressed="${view === 'krizova'}">Křížová tabulka</button>
     <button class="${view === 'poradi' ? 'on' : ''}" data-view="poradi" aria-pressed="${view === 'poradi'}">Průběžné pořadí</button></div>
     ${['A', 'B'].map((g) => `<div class="groupHead"><h3>Skupina ${g}</h3><small>Plocha ${g} ${RINK[g]}</small></div>${view === 'krizova' ? matrix(g) : standings(g)}`).join('')}
-    <p><small>Odehráno = počet dohraných zápasů z celkového počtu ve skupině. Body a skóre zahrnují každou potvrzenou třetinu.</small></p>
+    <p><small>${view === 'poradi' ? `Z = odehrané zápasy (každý tým hraje ${M.groups.A.rows.length - 1}). V / R / P = vyhrané, remízové a prohrané třetiny – body se dávají za každou třetinu (2 / 1 / 0). ` : ''}Body a skóre zahrnují každou potvrzenou třetinu.</small></p>
     <div class="export">${M.reportReady
       ? `<a class="pdf" href="${api}/api/report.pdf">Stáhnout výsledky turnaje (PDF)</a><small>Kompletní zápis: propozice, všechna utkání, tabulky a konečné pořadí.</small>`
       : `<span class="pdf off" aria-disabled="true">Výsledky turnaje (PDF)</span><small>Export bude dostupný po odehrání posledního zápasu – utkání o 1. místo.</small>`}</div>`;
