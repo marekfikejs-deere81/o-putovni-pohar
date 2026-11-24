@@ -128,3 +128,13 @@ test('Propozice: menu a ceny se doplní z nastavení', async () => {
   assert.ok(t.includes('Vývar, řízek.') && t.includes('hráč 140\u00a0Kč') && t.includes('týmu 150\u00a0Kč'), t);
   assert.ok(!/\{(menu|cenaHrac|cenaRT)\}/.test(JSON.stringify(P)));
 });
+
+test('Obědy: odstupy od zápasů podle aktuálního rozpisu', async () => {
+  const { lunchGaps } = await import('../shared/lunch-gaps.js');
+  const M = {
+    blocks: [{ id: 1, from: 600, to: 635 }, { id: 2, from: 685, to: 720 }],
+    matches: [{ blockId: 1, home: 3, away: 4 }, { blockId: 2, home: 5, away: 3 }],
+  };
+  assert.deepEqual(lunchGaps(M, [3, 9], { from: 645, to: 665 }), { prevEnd: 635, nextStart: 685, before: 10, after: 20 });
+  assert.deepEqual(lunchGaps(M, [9], { from: 645, to: 665 }), { prevEnd: null, nextStart: null, before: null, after: null });
+});

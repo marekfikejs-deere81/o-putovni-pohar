@@ -1,5 +1,7 @@
 // Export aktuálního časového rozpisu do JPEG a PDF (A4) ve vzhledu tištěného rozpisu.
 // Kreslí se do canvasu v prohlížeči z veřejného modelu – časy a dvojice jsou vždy ty, které jsou v aplikaci.
+import { lunchGaps } from './shared/lunch-gaps.js';
+
 const W = 1654, H = 2339; // A4 při 200 dpi
 const NAVY = '#15284b', BLUE = '#3d7cc9', GRAY = '#6f7785', LINE = '#d3d8e0', ZEBRA = '#eaf1fb', ICE = '#f2f4f8', GOLD = '#fff2c2';
 const FONT = 'RozpisSans';
@@ -149,18 +151,20 @@ export async function drawSchedule(M, base = '') {
 const toBlob = (c, type, q) => new Promise((res) => c.toBlob(res, type, q));
 
 /** Jedna stránka A4 s JPEG obrázkem (DCTDecode) – bez knihoven. */
-function pdfFromJpeg(jpeg, w, h) {
+function pdfFromJpeg(jpeg, w, h, landscape = false) {
   const enc = new TextEncoder();
-  const PW = 595.28, PH = 841.89;
+  const PW = landscape ? 841.89 : 595.28, PH = landscape ? 595.28 : 841.89;
   const objs = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`,
     null, // obrázek
     null, // obsah
-    '<< /Title (Casovy rozpis - O putovni pohar 2026) /Producer (vlasimskypohar.cz) >>',
+    `<< /Title (${landscape ? 'Obedy - casova okna' : 'Casovy rozpis'} - O putovni pohar 2026) /Producer (vlasimskypohar.cz) >>`,
   ];
-  const content = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`;
+  // obrázek na šířku stránky, nahoře (u obědů může být nižší než stránka)
+  const ih = Math.min(PH, PW * h / w), iw = ih * w / h;
+  const content = `q ${iw.toFixed(2)} 0 0 ${ih.toFixed(2)} ${((PW - iw) / 2).toFixed(2)} ${(PH - ih).toFixed(2)} cm /Im0 Do Q`;
   const parts = [enc.encode('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
   const offsets = [];
   let pos = parts[0].length;
@@ -180,10 +184,10 @@ function pdfFromJpeg(jpeg, w, h) {
   return new Blob(parts, { type: 'application/pdf' });
 }
 
-export async function scheduleFiles(M, base = '') {
-  const c = await drawSchedule(M, base);
+export async function scheduleFiles(M, base = '', kind = 'rozpis') {
+  const c = kind === 'obedy' ? await drawLunches(M, base) : await drawSchedule(M, base);
   const jpg = await toBlob(c, 'image/jpeg', 0.92);
-  const pdf = pdfFromJpeg(new Uint8Array(await jpg.arrayBuffer()), c.width, c.height);
+  const pdf = pdfFromJpeg(new Uint8Array(await jpg.arrayBuffer()), c.width, c.height, kind === 'obedy');
   return { canvas: c, jpg, pdf };
 }
 
@@ -192,4 +196,77 @@ export function download(blob, name) {
   const a = Object.assign(document.createElement('a'), { href: url, download: name });
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+// ---------- Obědy – časová okna (A4 na šířku) ----------
+const LSHORT = { VLA: 'Vlašim A', VLB: 'Vlašim B', BEN: 'Benešov', CEB: 'Budějovice', MBL: 'Boleslav', LIT: 'Litvínov', SVE: 'Světlá', SLA: 'Slavia', KOB: 'Kobra', PLZ: 'Plzeň' };
+const lname = (t) => (t ? LSHORT[t.code] || t.name : '');
+
+export async function drawLunches(M, base = '') {
+  await loadFonts(base);
+  const LW = 1800, LH = 1040; // jako předloha; v PDF na stránce A4 na šířku nahoře
+  const c = document.createElement('canvas');
+  c.width = LW; c.height = LH;
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, LW, LH);
+  g.textBaseline = 'middle';
+  const font = (size, bold = false) => { g.font = `${bold ? '700' : '400'} ${size}px ${FONT}, "DejaVu Sans", Verdana, sans-serif`; };
+  const text = (str, x, y, size, { bold = false, color = '#111' } = {}) => { font(size, bold); g.fillStyle = color; g.fillText(String(str), x, y); };
+  const team = (id) => M.teams.find((t) => t.id === id);
+  const L = 130, R = LW - 110, TW = R - L, PAD = 18;
+
+  let y = 145;
+  text('Obědy – časová okna', 148, y, 62, { bold: true, color: NAVY });
+  y += 64;
+  text('Vánoční turnaj 2. tříd o Putovní pohár · pondělí 28. 12. 2026 · Zimní stadion Vlašim', 148, y, 31, { color: GRAY });
+  y += 50;
+  const stamp = new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  text(`Aktuální rozvržení · stav k ${stamp}`, 148, y, 32, { bold: true, color: BLUE });
+  y += 45;
+
+  const cols = [L, L + 242, L + 640, L + 918, L + 1248, R];
+  const HH = 126, RH = 60;
+  g.fillStyle = NAVY; g.fillRect(L, y, TW, HH);
+  const heads = [['Oběd'], ['Týmy'], ['Konec', 'předchozího', 'zápasu'], ['Další zápas'], ['Odstup oběd →', 'zápas']];
+  heads.forEach((h, i) => h.forEach((ln, k) => text(ln, cols[i] + PAD, y + HH / 2 + (k - (h.length - 1) / 2) * 33, 26, { bold: true, color: '#fff' })));
+  g.strokeStyle = '#3a4f73'; g.lineWidth = 1;
+  for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(cols[i], y); g.lineTo(cols[i], y + HH); g.stroke(); }
+  const top = y; y += HH;
+
+  const rows = M.lunches.map((l) => ({ l, ts: l.teams.map(team).filter(Boolean), gp: lunchGaps(M, l.teams, l) }));
+  rows.forEach(({ l, ts, gp }, i) => {
+    if (i % 2) { g.fillStyle = ZEBRA; g.fillRect(L, y, TW, RH); }
+    const cells = [`${hm(l.from)}–${hm(l.to)}`, ts.map(lname).join(' + '), gp.prevEnd === null ? '–' : hm(gp.prevEnd), gp.nextStart === null ? '–' : hm(gp.nextStart), gp.after === null ? '–' : `${gp.after} min`];
+    cells.forEach((v, k) => text(v, cols[k] + PAD, y + RH / 2, 28, { bold: k === 1 }));
+    g.strokeStyle = LINE; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(L, y + RH); g.lineTo(R, y + RH); g.stroke();
+    for (let k = 1; k < 5; k++) { g.beginPath(); g.moveTo(cols[k], y); g.lineTo(cols[k], y + RH); g.stroke(); }
+    y += RH;
+  });
+  g.strokeStyle = LINE; g.lineWidth = 2; g.strokeRect(L, top, TW, y - top);
+
+  // poznámka – spočítaná z aktuálního rozvržení
+  const lens = [...new Set(M.lunches.map((l) => l.to - l.from))];
+  const maxTeams = Math.max(...M.lunches.map((l) => l.teams.length));
+  const withBefore = rows.filter((r) => r.gp.before !== null);
+  const withAfter = rows.filter((r) => r.gp.after !== null);
+  const minBefore = withBefore.length ? Math.min(...withBefore.map((r) => r.gp.before)) : null;
+  const minAfter = withAfter.length ? Math.min(...withAfter.map((r) => r.gp.after)) : null;
+  const who = withAfter.filter((r) => r.gp.after === minAfter).flatMap((r) => r.ts.map(lname));
+  const note = [
+    `Oběd trvá ${lens.length === 1 ? lens[0] : lens.join('–')} minut.`,
+    `V restauraci jsou vždy nejvýše ${maxTeams === 2 ? 'dva týmy' : `${maxTeams} týmy`}.`,
+    'Jídlo prosíme mít připravené na stole při příchodu týmu.',
+    minBefore !== null ? `Na převlečení po zápase je jen ${minBefore} minut` : '',
+    minAfter !== null ? `${minBefore !== null ? ' a nejkratší' : 'Nejkratší'} odstup od konce oběda do dalšího zápasu je ${minAfter} minut (${who.join(' a ')}).` : (minBefore !== null ? '.' : ''),
+  ].join(' ').replace(/\s+/g, ' ').replace(' .', '.').trim();
+  y += 46;
+  font(28); g.fillStyle = '#111';
+  let line = '';
+  for (const w of note.split(' ')) {
+    const next = line ? `${line} ${w}` : w;
+    if (g.measureText(next).width > TW - 2 * PAD) { g.fillText(line, 148, y); y += 40; line = w; } else line = next;
+  }
+  if (line) g.fillText(line, 148, y);
+  return c;
 }

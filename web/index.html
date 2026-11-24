@@ -106,6 +106,7 @@ footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;mi
 .pdf.off{background:#e6edf2;color:#7890a2;cursor:not-allowed}
 .maplink{display:inline-block;margin-top:6px;font-weight:600;color:#124f83}
 .links{display:flex;gap:18px;flex-wrap:wrap}
+.gaps{margin:-2px 0 8px 2px;font-size:13px;color:#4a6378;line-height:1.45}
 .closed{background:#fff1e6;border:2px solid #e8833a;color:#7a3400;font-weight:700;border-radius:10px;padding:12px 14px;margin:14px 0 4px;line-height:1.4}
 .stream{display:block;border-radius:10px;overflow:hidden;background:#232b47;color:#fff;text-decoration:none;margin:6px 0 14px}
 .stream img{display:block;width:100%;height:auto;padding:14px 16px 0}
@@ -133,6 +134,7 @@ footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;mi
 
 <script type="module">
 import { fillPropozice } from './shared/propozice.js';
+import { lunchGaps } from './shared/lunch-gaps.js';
 import { toHHMM } from './shared/schedule.js';
 
 const TZ = 'Europe/Prague';
@@ -333,7 +335,9 @@ function pageObedy() {
         if (o) shown.add(o.key);
         const ts = o ? o.teams.map(team) : [team(tid)];
         const cnt = !o || !o.ordered ? '<i>neobjednáno</i>' : `hráči ${o.players} · RT ${o.staff}`;
-        return `<div class="meal">${ts.map((x) => logo(x)).join('')}<span>${esc(o?.label ?? team(tid).name)}</span><span class="cnt">${cnt}</span></div>`;
+        const gp = lunchGaps(M, ts.map((x) => x.id), l);
+        const gap = gp.prevEnd === null && gp.nextStart === null ? '' : `<div class="gaps">${gp.prevEnd !== null ? `Dohrají <b>${toHHMM(gp.prevEnd)}</b> · ${gp.before} min do oběda` : 'Před obědem nehrají'}<br>${gp.nextStart !== null ? `Další zápas <b>${toHHMM(gp.nextStart)}</b> · ${gp.after} min po obědě` : 'Po obědě už nehrají'}</div>`;
+        return `<div class="meal">${ts.map((x) => logo(x)).join('')}<span>${esc(o?.label ?? team(tid).name)}</span><span class="cnt">${cnt}</span></div>${gap}`;
       }).join('');
       return `<div class="card${cur ? ' live' : ''}"><b>${toHHMM(l.from)}–${toHHMM(l.to)}</b>${cur ? ' · <b>právě obědvají</b>' : ''}${items}</div>`;
     }).join('')}`;

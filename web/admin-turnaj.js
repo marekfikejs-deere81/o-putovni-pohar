@@ -196,21 +196,29 @@ export async function renderSchedule(app, ctx, head) {
     <section class="card"><h2>Časový rozpis ke stažení</h2>
     <div class="muted">Vytvoří aktuální rozpis (časy i dvojice podle aplikace) na stránku A4 – k tisku, na nástěnku nebo k rozeslání týmům.</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="rz-jpg">Stáhnout JPEG</button><button class="btn" id="rz-pdf">Stáhnout PDF</button><button class="btn secondary" id="rz-show">Náhled</button></div>
-    <div id="rz-prev" style="margin-top:10px"></div></section>`;
-  const rz = async (kind, btn) => {
+    <div id="rz-prev" style="margin-top:10px"></div></section>
+    <section class="card"><h2>Obědová okna ke stažení</h2>
+    <div class="muted">Aktuální časy obědů, týmy a odstupy od zápasů – pro restauraci a trenéry.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="ob-jpg">Stáhnout JPEG</button><button class="btn" id="ob-pdf">Stáhnout PDF</button><button class="btn secondary" id="ob-show">Náhled</button></div>
+    <div id="ob-prev" style="margin-top:10px"></div></section>`;
+  const rz = async (kind, btn, what = 'rozpis') => {
     const label = btn.textContent; btn.disabled = true; btn.textContent = 'Vytvářím…';
     try {
       const { scheduleFiles, download } = await import('./rozpis-export.js');
-      const f = await scheduleFiles(M, '');
-      if (kind === 'jpg') download(f.jpg, 'rozpis-o-putovni-pohar-2026.jpg');
-      else if (kind === 'pdf') download(f.pdf, 'rozpis-o-putovni-pohar-2026.pdf');
-      else { const img = new Image(); img.src = URL.createObjectURL(f.jpg); img.alt = 'Náhled rozpisu'; img.style.cssText = 'width:100%;border:1px solid var(--line);border-radius:8px'; const p = document.getElementById('rz-prev'); p.innerHTML = ''; p.append(img); }
+      const f = await scheduleFiles(M, '', what);
+      const name = what === 'obedy' ? 'obedy-casova-okna-o-putovni-pohar-2026' : 'rozpis-o-putovni-pohar-2026';
+      if (kind === 'jpg') download(f.jpg, `${name}.jpg`);
+      else if (kind === 'pdf') download(f.pdf, `${name}.pdf`);
+      else { const img = new Image(); img.src = URL.createObjectURL(f.jpg); img.alt = 'Náhled'; img.style.cssText = 'width:100%;border:1px solid var(--line);border-radius:8px'; const p = document.getElementById(what === 'obedy' ? 'ob-prev' : 'rz-prev'); p.innerHTML = ''; p.append(img); }
     } catch (e) { alert('Rozpis se nepodařilo vytvořit: ' + e.message); }
     btn.disabled = false; btn.textContent = label;
   };
   document.getElementById('rz-jpg').onclick = (e) => rz('jpg', e.target);
   document.getElementById('rz-pdf').onclick = (e) => rz('pdf', e.target);
   document.getElementById('rz-show').onclick = (e) => rz('show', e.target);
+  document.getElementById('ob-jpg').onclick = (e) => rz('jpg', e.target, 'obedy');
+  document.getElementById('ob-pdf').onclick = (e) => rz('pdf', e.target, 'obedy');
+  document.getElementById('ob-show').onclick = (e) => rz('show', e.target, 'obedy');
   const f = document.getElementById('sf');
   if (shiftPreview) { f.blockId.value = String(shiftPreview.blockId); f.mode.value = shiftPreview.mode; f.minutes.value = String(shiftPreview.minutes); }
   f.onsubmit = async (e) => {
