@@ -137,7 +137,13 @@ export async function drawSchedule(M, base = '') {
 
   // --- poznámka ---
   y += 30;
-  const note = 'Utkání trvá 35 minut (2 × 14 min a nájezdy za fauly). Ve skupině je úprava ledu vždy po dvou utkáních, v poledne je delší pauza. Časy odpovídají aktuálnímu stavu v aplikaci turnaje – sleduj www.vlasimskypohar.cz.';
+  // nejkratší pauza týmu mezi skupinovými utkáními
+  let minBreak = Infinity;
+  for (const t of M.teams) {
+    const bs = M.matches.filter((m) => !m.place && (m.home === t.id || m.away === t.id)).map((m) => M.blocks.find((x) => x.id === m.blockId)).sort((p, q) => p.from - q.from);
+    for (let i = 1; i < bs.length; i++) minBreak = Math.min(minBreak, bs[i].from - bs[i - 1].to);
+  }
+  const note = `Utkání trvá 35 minut (2 × 14 min a nájezdy za fauly). Ve skupině je úprava ledu vždy po dvou utkáních, v poledne je delší pauza.${Number.isFinite(minBreak) ? ` Každý tým má mezi skupinovými utkáními nejméně ${minBreak} minut pauzy.` : ''} Obědy viz samostatný rozpis.`;
   font(24); g.fillStyle = GRAY;
   let line = '';
   for (const w of note.split(' ')) {
@@ -215,17 +221,36 @@ export async function drawLunches(M, base = '') {
   const team = (id) => M.teams.find((t) => t.id === id);
   const L = 130, R = LW - 110, TW = R - L, PAD = 18;
 
+  // souhrn rozvržení – spočítaný z aplikace
+  const team1 = (id) => M.teams.find((t) => t.id === id);
+  const per = M.lunches.map((l) => ({ l, ts: l.teams.map(team1).filter(Boolean), each: l.teams.map((id) => ({ id, ...lunchGaps(M, [id], l) })) }));
+  const lens = [...new Set(M.lunches.map((l) => l.to - l.from))];
+  // nejvíc týmů v restauraci současně (okna, která se překrývají)
+  let maxIn = 0;
+  for (const l of M.lunches) maxIn = Math.max(maxIn, M.lunches.filter((o) => o.from < l.to && o.to > l.from && o.from <= l.from).reduce((n, o) => n + o.teams.length, 0));
+  const pause = M.blocks.find((x) => !x.games.length && /poledn/i.test(x.title));
+  const words = { 1: 'jeden tým', 2: 'dva týmy', 3: 'tři týmy', 4: 'čtyři týmy' };
+  const minLen = lens.length === 1 ? `${lens[0]} minut` : `${Math.min(...lens)}–${Math.max(...lens)} minut`;
+  const subtitle = `Začátek ${hm(M.blocks[0].from)}${pause ? `, polední pauza ${hm(pause.from)}–${hm(pause.to)}` : ''} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'} v restauraci, oběd ${minLen}`;
+
+  const L0 = 148;
+  const wrap = (str, size, bold, max) => {
+    font(size, bold); const out = []; let line = '';
+    for (const w of String(str).split(' ')) { const nx = line ? `${line} ${w}` : w; if (g.measureText(nx).width > max && line) { out.push(line); line = w; } else line = nx; }
+    if (line) out.push(line); return out;
+  };
   let y = 145;
-  text('Obědy – časová okna', 148, y, 62, { bold: true, color: NAVY });
+  text('Obědy – časová okna', L0, y, 62, { bold: true, color: NAVY });
   y += 64;
-  text('Vánoční turnaj 2. tříd o Putovní pohár · pondělí 28. 12. 2026 · Zimní stadion Vlašim', 148, y, 31, { color: GRAY });
+  text('Vánoční turnaj 2. tříd o Putovní pohár · pondělí 28. 12. 2026 · Zimní stadion Vlašim', L0, y, 31, { color: GRAY });
   y += 50;
+  for (const ln of wrap(subtitle, 32, true, TW - 2 * PAD)) { text(ln, L0, y, 32, { bold: true, color: BLUE }); y += 42; }
   const stamp = new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  text(`Aktuální rozvržení · stav k ${stamp}`, 148, y, 32, { bold: true, color: BLUE });
-  y += 45;
+  text(`Aktuální rozvržení · stav k ${stamp}`, L0, y - 4, 22, { color: GRAY });
+  y += 22;
 
   const cols = [L, L + 242, L + 640, L + 918, L + 1248, R];
-  const HH = 126, RH = 60;
+  const HH = 126;
   g.fillStyle = NAVY; g.fillRect(L, y, TW, HH);
   const heads = [['Oběd'], ['Týmy'], ['Konec', 'předchozího', 'zápasu'], ['Další zápas'], ['Odstup oběd →', 'zápas']];
   heads.forEach((h, i) => h.forEach((ln, k) => text(ln, cols[i] + PAD, y + HH / 2 + (k - (h.length - 1) / 2) * 33, 26, { bold: true, color: '#fff' })));
@@ -233,11 +258,17 @@ export async function drawLunches(M, base = '') {
   for (let i = 1; i < 5; i++) { g.beginPath(); g.moveTo(cols[i], y); g.lineTo(cols[i], y + HH); g.stroke(); }
   const top = y; y += HH;
 
-  const rows = M.lunches.map((l) => ({ l, ts: l.teams.map(team).filter(Boolean), gp: lunchGaps(M, l.teams, l) }));
-  rows.forEach(({ l, ts, gp }, i) => {
+  const uniq = (arr) => [...new Set(arr.filter((v) => v !== null))];
+  per.forEach(({ l, ts, each }, i) => {
+    const prev = uniq(each.map((e) => e.prevEnd)), next = uniq(each.map((e) => e.nextStart)), after = uniq(each.map((e) => e.after));
+    const teamLines = wrap(ts.map(lname).join(' + '), 28, true, cols[2] - cols[1] - 2 * PAD);
+    const RH = teamLines.length > 1 ? 94 : 60;
     if (i % 2) { g.fillStyle = ZEBRA; g.fillRect(L, y, TW, RH); }
-    const cells = [`${hm(l.from)}–${hm(l.to)}`, ts.map(lname).join(' + '), gp.prevEnd === null ? '–' : hm(gp.prevEnd), gp.nextStart === null ? '–' : hm(gp.nextStart), gp.after === null ? '–' : `${gp.after} min`];
-    cells.forEach((v, k) => text(v, cols[k] + PAD, y + RH / 2, 28, { bold: k === 1 }));
+    text(`${hm(l.from)}–${hm(l.to)}`, cols[0] + PAD, y + RH / 2, 28);
+    teamLines.forEach((ln, k) => text(ln, cols[1] + PAD, y + RH / 2 + (k - (teamLines.length - 1) / 2) * 35, 28, { bold: true }));
+    text(prev.length ? prev.map(hm).join(' / ') : '–', cols[2] + PAD, y + RH / 2, 28);
+    text(next.length ? next.map(hm).join(' / ') : '–', cols[3] + PAD, y + RH / 2, 28);
+    text(after.length ? `${after.join(' / ')} min` : '–', cols[4] + PAD, y + RH / 2, 28);
     g.strokeStyle = LINE; g.lineWidth = 1.5;
     g.beginPath(); g.moveTo(L, y + RH); g.lineTo(R, y + RH); g.stroke();
     for (let k = 1; k < 5; k++) { g.beginPath(); g.moveTo(cols[k], y); g.lineTo(cols[k], y + RH); g.stroke(); }
@@ -245,28 +276,14 @@ export async function drawLunches(M, base = '') {
   });
   g.strokeStyle = LINE; g.lineWidth = 2; g.strokeRect(L, top, TW, y - top);
 
-  // poznámka – spočítaná z aktuálního rozvržení
-  const lens = [...new Set(M.lunches.map((l) => l.to - l.from))];
-  const maxTeams = Math.max(...M.lunches.map((l) => l.teams.length));
-  const withBefore = rows.filter((r) => r.gp.before !== null);
-  const withAfter = rows.filter((r) => r.gp.after !== null);
-  const minBefore = withBefore.length ? Math.min(...withBefore.map((r) => r.gp.before)) : null;
-  const minAfter = withAfter.length ? Math.min(...withAfter.map((r) => r.gp.after)) : null;
-  const who = withAfter.filter((r) => r.gp.after === minAfter).flatMap((r) => r.ts.map(lname));
+  const all = per.flatMap((r) => r.each);
+  const bef = all.map((e) => e.before).filter((v) => v !== null), aft = all.map((e) => e.after).filter((v) => v !== null);
   const note = [
-    `Oběd trvá ${lens.length === 1 ? lens[0] : lens.join('–')} minut.`,
-    `V restauraci jsou vždy nejvýše ${maxTeams === 2 ? 'dva týmy' : `${maxTeams} týmy`}.`,
-    'Jídlo prosíme mít připravené na stole při příchodu týmu.',
-    minBefore !== null ? `Na převlečení po zápase je jen ${minBefore} minut` : '',
-    minAfter !== null ? `${minBefore !== null ? ' a nejkratší' : 'Nejkratší'} odstup od konce oběda do dalšího zápasu je ${minAfter} minut (${who.join(' a ')}).` : (minBefore !== null ? '.' : ''),
-  ].join(' ').replace(/\s+/g, ' ').replace(' .', '.').trim();
+    `Oběd trvá ${minLen}.`,
+    `V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}.`,
+    bef.length ? `Po zápase je vždy nejméně ${Math.min(...bef)} minut na převlečení${aft.length ? `, nejkratší odstup od konce oběda do dalšího zápasu je ${Math.min(...aft)} minut.` : '.'}` : '',
+  ].join(' ').trim();
   y += 46;
-  font(28); g.fillStyle = '#111';
-  let line = '';
-  for (const w of note.split(' ')) {
-    const next = line ? `${line} ${w}` : w;
-    if (g.measureText(next).width > TW - 2 * PAD) { g.fillText(line, 148, y); y += 40; line = w; } else line = next;
-  }
-  if (line) g.fillText(line, 148, y);
+  for (const ln of wrap(note, 28, false, TW - 2 * PAD)) { text(ln, L0, y, 28); y += 40; }
   return c;
 }

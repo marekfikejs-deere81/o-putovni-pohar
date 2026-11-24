@@ -1,52 +1,44 @@
 [
   {
-    "start": "10:45",
-    "end": "11:05",
-    "teams": [
-      "CEB",
-      "SLA"
-    ],
-    "anchorBlockId": 5,
-    "offsetMinutes": 10
-  },
-  {
-    "start": "11:10",
-    "end": "11:30",
+    "start": "10:50",
+    "end": "11:20",
     "teams": [
       "VLA",
       "VLB"
     ],
     "anchorBlockId": 6,
-    "offsetMinutes": 20
-  },
-  {
-    "start": "11:35",
-    "end": "11:55",
-    "teams": [
-      "MBL",
-      "KOB"
-    ],
-    "anchorBlockId": 7,
-    "offsetMinutes": 10
-  },
-  {
-    "start": "12:00",
-    "end": "12:20",
-    "teams": [
-      "LIT",
-      "PLZ"
-    ],
-    "anchorBlockId": 8,
     "offsetMinutes": 0
   },
   {
-    "start": "12:25",
+    "start": "11:40",
+    "end": "12:10",
+    "teams": [
+      "MBL",
+      "KOB",
+      "LIT"
+    ],
+    "anchorBlockId": 7,
+    "offsetMinutes": 15
+  },
+  {
+    "start": "12:15",
     "end": "12:45",
+    "teams": [
+      "CEB",
+      "SLA",
+      "PLZ"
+    ],
+    "anchorBlockId": 8,
+    "offsetMinutes": 15
+  },
+  {
+    "start": "12:45",
+    "end": "13:15",
     "teams": [
       "BEN",
       "SVE"
     ],
-    "anchorBlockId": 9,
-    "offsetMinutes": 5
+    "anchorBlockId": 8,
+    "offsetMinutes": 45
   }
 ]

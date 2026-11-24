@@ -326,7 +326,7 @@ function pageObedy() {
   const shown = new Set();
   return `<h2>Obědy</h2>
     <p class="note"><b>Menu:</b> ${esc(L.menu)}<br><b>Cena:</b> hráč ${czk(L.prices.player)} · realizační tým ${czk(L.prices.staff)}<br>
-    Objednávky do <b>12.&nbsp;12.&nbsp;2026 včetně</b> přes odkaz, který každý tým dostal od pořadatele. Restaurace na zimním stadionu, jídlo bude připravené před příchodem.</p>
+    Objednávky do <b>12.&nbsp;12.&nbsp;2026 včetně</b> přes odkaz, který každý tým dostal od pořadatele. Restaurace na zimním stadionu, jídlo bude servírované po příchodu týmů.</p>
     ${M.lunches.map((l) => {
       const cur = nowMin >= l.from && nowMin < l.to;
       const items = l.teams.map((tid) => {
