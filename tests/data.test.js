@@ -53,8 +53,8 @@ test('Znaky, zkratky a dvouřádkové názvy', () => {
   }
 });
 
-test('Rozpis 08:00–18:00 navazuje bez mezer, finále jen plocha A', () => {
-  assert.equal(blocks[0].start, '08:00');
+test('Rozpis 07:50–18:00 navazuje bez mezer, finále jen plocha A', () => {
+  assert.equal(blocks[0].start, '07:50');
   assert.equal(blocks.at(-1).end, '18:00');
   for (let i = 1; i < blocks.length; i++) assert.equal(blocks[i].from, blocks[i - 1].to);
   const final = games.find((x) => x.place === 1);
@@ -73,10 +73,10 @@ test('Mezi skupinovými zápasy týmu nejméně 50 minut', () => {
 
 test('Přejímka „Časy“: hraniční okamžiky', () => {
   const at = (hhmm) => blockAt(blocks, toMinutes(hhmm));
-  assert.equal(at('08:00').games.length, 2);
-  assert.equal(at('09:10').games.length, 0);
-  assert.equal(at('09:25').start, '09:25');
-  assert.equal(at('12:00').title, 'Úprava ledu + polední pauza');
+  assert.equal(at('07:50').games.length, 2);
+  assert.equal(at('09:00').games.length, 0);
+  assert.equal(at('09:15').start, '09:15');
+  assert.equal(at('11:50').title, 'Úprava ledu + polední pauza');
   assert.equal(at('12:49').title, 'Úprava ledu + polední pauza');
   assert.equal(at('12:50').games.length, 2);
   assert.equal(at('15:40').games.length, 2);
@@ -85,10 +85,10 @@ test('Přejímka „Časy“: hraniční okamžiky', () => {
   assert.deepEqual(at('17:05').games.map((x) => x.rink), ['A']);
   assert.equal(at('17:40').title, 'Vyhlášení výsledků a předání cen');
   assert.equal(at('18:00'), null);
-  const next = nextGameBlock(blocks, toMinutes('09:10'));
+  const next = nextGameBlock(blocks, toMinutes('09:00'));
   assert.deepEqual(next.games.map((x) => `${x.home}×${x.away}`), ['BEN×LIT', 'SVE×PLZ']);
-  assert.equal(minutesUntil(next.from, toMinutes('09:10') * 60), 15);
-  assert.equal(minutesUntil(next.from, toMinutes('09:10') * 60 + 1), 15); // zaokrouhleno nahoru
+  assert.equal(minutesUntil(next.from, toMinutes('09:00') * 60), 15);
+  assert.equal(minutesUntil(next.from, toMinutes('09:00') * 60 + 1), 15); // zaokrouhleno nahoru
 });
 
 test('Přejímka „Stadion“: rotace 10 s při úpravě ledu v 09:10', () => {
@@ -115,8 +115,8 @@ test('Obědy: 4 okna po 30 min, nejvýše 3 týmy, 10 týmů, časy z kotev, ž�
     }
   }
   // Posun rozpisu o +10 min od bloku 5 posune navázané obědy
-  const shifted = blocks.map((b) => (b.from >= toMinutes('10:35') ? { ...b, from: b.from + 10, to: b.to + 10 } : b));
-  assert.equal(toHHMM(lunchWindows(lunches, shifted)[0].from), '11:00');
+  const shifted = blocks.map((b) => (b.from >= toMinutes('10:25') ? { ...b, from: b.from + 10, to: b.to + 10 } : b));
+  assert.equal(toHHMM(lunchWindows(lunches, shifted)[0].from), '10:55');
 });
 
 test('Cena obědu: 12 hráčů × 140 + 3 RT × 150 = 2 130 Kč', () => {

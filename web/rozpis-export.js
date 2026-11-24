@@ -16,6 +16,12 @@ function loadFonts(base) {
   return fontsReady;
 }
 
+// Drobné razítko vpravo dole: z jakého stavu aplikace soubor vznikl.
+function stampAt(g, right, y) {
+  const stamp = new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  g.font = `400 20px ${FONT}, "DejaVu Sans", Verdana, sans-serif`; g.fillStyle = '#9aa3ae'; g.textAlign = 'right';
+  g.fillText(`Aktuální stav k ${stamp} · www.vlasimskypohar.cz`, right, y); g.textAlign = 'left';
+}
 const hm = (m) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
 const range = (b) => `${hm(b.from)}–${hm(b.to)}`;
 
@@ -48,8 +54,8 @@ export async function drawSchedule(M, base = '') {
   y += 72;
   text('Ročník 2019 · pondělí 28. 12. 2026 · Zimní stadion Vlašim · časový rozpis', 136, y, { size: 30, color: GRAY });
   y += 48;
-  const stamp = new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  text(`Aktuální rozpis · stav k ${stamp}`, 136, y, { size: 30, bold: true, color: BLUE });
+  const pauseR = M.blocks.find((x) => !x.games.length && /poledn/i.test(x.title));
+  text(`Začátek v ${hm(M.blocks[0].from)}${pauseR ? ` · polední pauza ${hm(pauseR.from)}–${hm(pauseR.to)}` : ''}`, 136, y, { size: 30, bold: true, color: BLUE });
   y += 38;
 
   // --- skupiny ---
@@ -151,6 +157,7 @@ export async function drawSchedule(M, base = '') {
     if (g.measureText(next).width > TW - 2 * PAD) { g.fillText(line, 136, y); y += 34; line = w; } else line = next;
   }
   if (line) g.fillText(line, 136, y);
+  stampAt(g, R, y + 50);
   return c;
 }
 
@@ -231,7 +238,7 @@ export async function drawLunches(M, base = '') {
   const pause = M.blocks.find((x) => !x.games.length && /poledn/i.test(x.title));
   const words = { 1: 'jeden tým', 2: 'dva týmy', 3: 'tři týmy', 4: 'čtyři týmy' };
   const minLen = lens.length === 1 ? `${lens[0]} minut` : `${Math.min(...lens)}–${Math.max(...lens)} minut`;
-  const subtitle = `Začátek ${hm(M.blocks[0].from)}${pause ? `, polední pauza ${hm(pause.from)}–${hm(pause.to)}` : ''} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'} v restauraci, oběd ${minLen}`;
+  const subtitle = `Začátek v ${hm(M.blocks[0].from)} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'} v restauraci, oběd ${minLen}`;
 
   const L0 = 148;
   const wrap = (str, size, bold, max) => {
@@ -245,9 +252,6 @@ export async function drawLunches(M, base = '') {
   text('Vánoční turnaj 2. tříd o Putovní pohár · pondělí 28. 12. 2026 · Zimní stadion Vlašim', L0, y, 31, { color: GRAY });
   y += 50;
   for (const ln of wrap(subtitle, 32, true, TW - 2 * PAD)) { text(ln, L0, y, 32, { bold: true, color: BLUE }); y += 42; }
-  const stamp = new Date().toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-  text(`Aktuální rozvržení · stav k ${stamp}`, L0, y - 4, 22, { color: GRAY });
-  y += 22;
 
   const cols = [L, L + 242, L + 640, L + 918, L + 1248, R];
   const HH = 126;
@@ -285,5 +289,6 @@ export async function drawLunches(M, base = '') {
   ].join(' ').trim();
   y += 46;
   for (const ln of wrap(note, 28, false, TW - 2 * PAD)) { text(ln, L0, y, 28); y += 40; }
+  stampAt(g, R, y + 10);
   return c;
 }

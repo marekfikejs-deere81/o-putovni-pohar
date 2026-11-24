@@ -121,21 +121,21 @@ test('Ruční pořadí: kontrola úplnosti, platí pro nasazení, návrat k auto
   assert.equal(M.matches.find((m) => m.place === 1).home, null);
 });
 
-test('Posun rozpisu: +10 min od 10:35 posune bloky i navázané obědy; minulost a zahájené obědy se nemění', async () => {
+test('Posun rozpisu: +10 min od 10:25 posune bloky i navázané obědy; minulost a zahájené obědy se nemění', async () => {
   const { q } = await setup();
   const at = (h, m) => h * 60 + m;
   const pre = await shiftSchedule(q, { blockId: 5, minutes: 10, mode: 'start' }, A, at(9, 0), false);
-  assert.equal(pre.blocks[0].from[1], at(10, 45));
-  assert.deepEqual(pre.lunches.map((l) => l.from), [[at(10, 50), at(11, 0)], [at(11, 40), at(11, 50)], [at(12, 15), at(12, 25)], [at(12, 45), at(12, 55)]]);
+  assert.equal(pre.blocks[0].from[1], at(10, 35));
+  assert.deepEqual(pre.lunches.map((l) => l.from), [[at(10, 45), at(10, 55)], [at(11, 30), at(11, 40)], [at(12, 5), at(12, 15)], [at(12, 35), at(12, 45)]]);
   let M = await model(q);
-  assert.equal(M.blocks.find((b) => b.id === 5).from, at(10, 35)); // náhled nic nezměnil
-  // Prodloužení probíhajícího bloku 11:25–12:00 o 5 min v 11:40: oběd 10:50 i 11:40 už začal → zamrznou
+  assert.equal(M.blocks.find((b) => b.id === 5).from, at(10, 25)); // náhled nic nezměnil
+  // Prodloužení probíhajícího bloku 11:15–11:50 o 5 min v 11:40: oběd 10:45 i 11:30 už začal → zamrznou
   await shiftSchedule(q, { blockId: 7, minutes: 5, mode: 'extend' }, A, at(11, 40), true);
   M = await model(q);
   const b7 = M.blocks.find((b) => b.id === 7);
-  assert.deepEqual([b7.from, b7.to], [at(11, 25), at(12, 5)]);
-  assert.equal(M.blocks.find((b) => b.id === 8).from, at(12, 5));
-  assert.deepEqual(M.lunches.map((l) => l.from), [at(10, 50), at(11, 40), at(12, 20), at(12, 50)]);
+  assert.deepEqual([b7.from, b7.to], [at(11, 15), at(11, 55)]);
+  assert.equal(M.blocks.find((b) => b.id === 8).from, at(11, 55));
+  assert.deepEqual(M.lunches.map((l) => l.from), [at(10, 45), at(11, 30), at(12, 10), at(12, 40)]);
   assert.equal(M.blocks.at(-1).to, at(18, 5));
   await assert.rejects(shiftSchedule(q, { blockId: 3, minutes: 5, mode: 'start' }, A, at(11, 40), true), (e) => e.status === 409); // minulost
   await assert.rejects(shiftSchedule(q, { blockId: 9, minutes: -30, mode: 'start' }, A, at(11, 40), true), (e) => e.status === 409); // překryv
