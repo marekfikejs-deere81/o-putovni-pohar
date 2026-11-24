@@ -315,7 +315,7 @@ async function runExport(btn) {
 
 function pageProgram() {
   const cur = currentBlock();
-  let s = `<h2>Program turnaje</h2>${banner()}${exportBox('rozpis', 'Časový rozpis ke stažení')}<p class="note"><b>Plocha A</b> pod časomírou · <b>Plocha B</b> pod restaurací</p>`;
+  let s = `<h2>Program turnaje</h2>${banner()}<p class="note"><b>Plocha A</b> pod časomírou · <b>Plocha B</b> pod restaurací</p>`;
   for (const b of M.blocks) {
     const c = b === cur;
     const inner = b.games.length
@@ -323,6 +323,7 @@ function pageProgram() {
       : `<p class="event${c ? ' current' : ''}">${toHHMM(b.from)}–${toHHMM(b.to)} · ${esc(b.title)}${c ? '<em class="nyni">PRÁVĚ TEĎ</em>' : ''}</p>`;
     s += c ? `<div class="block now-block" id="nyni" aria-current="time">${inner}</div>` : inner;
   }
+  s += exportBox('rozpis', 'Časový rozpis ke stažení');
   return s;
 }
 
