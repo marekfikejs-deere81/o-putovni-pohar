@@ -1,4 +1,4 @@
-// PDF zápis turnaje: propozice, skupiny, průběh všech utkání s třetinami a body, nájezdy, tabulky,
+// PDF zápis turnaje: propozice, skupiny, průběh všech utkání s poločasy a body, nájezdy, tabulky,
 // konečné pořadí a poznámky o rozhodnutí pořadatele. Český font (DejaVu Sans, subset). Bez soukromých údajů.
 import { PDFDocument, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
@@ -145,7 +145,7 @@ export async function generateReport(q, fonts, generatedAt = new Date()) {
 
   // 3) Průběh – všechna utkání chronologicky
   L.heading('Průběh turnaje – výsledky všech utkání');
-  L.text('Body se udělují za každou třetinu zvlášť: výhra 2, remíza 1, prohra 0. Skóre třetiny zahrnuje nájezdy za fauly.', { size: 8.5, color: MUTED });
+  L.text('Body se udělují za každý poločas zvlášť: výhra 2, remíza 1, prohra 0. Skóre poločasu zahrnuje nájezdy za fauly.', { size: 8.5, color: MUTED });
   L.space(4);
   const rows = [];
   for (const b of m.blocks) {
@@ -165,7 +165,7 @@ export async function generateReport(q, fonts, generatedAt = new Date()) {
   }
   L.table([
     { title: 'Čas', w: 7 }, { title: 'Pl.', w: 4, align: 'center' }, { title: 'Utkání', w: 8 }, { title: 'Týmy', w: 31, bold: true },
-    { title: '1. třetina', w: 11, align: 'center' }, { title: '2. třetina', w: 11, align: 'center' },
+    { title: '1. poločas', w: 11, align: 'center' }, { title: '2. poločas', w: 11, align: 'center' },
     { title: 'Skóre', w: 7, align: 'center', bold: true }, { title: 'Body', w: 7, align: 'center', bold: true }, { title: 'Pozn.', w: 14 },
   ], rows, { size: 8 });
 
@@ -176,7 +176,7 @@ export async function generateReport(q, fonts, generatedAt = new Date()) {
     L.sub(`Skupina ${g}`);
     L.table([
       { title: 'Poř.', w: 7, align: 'center', bold: true }, { title: 'Tým', w: 41, bold: true }, { title: 'Zápasy', w: 9, align: 'center' },
-      { title: 'V / R / P (třetiny)', w: 17, align: 'center' }, { title: 'Skóre', w: 12, align: 'center' }, { title: 'Body', w: 9, align: 'center', bold: true },
+      { title: 'V / R / P (poločasy)', w: 17, align: 'center' }, { title: 'Skóre', w: 12, align: 'center' }, { title: 'Body', w: 9, align: 'center', bold: true },
     ], G.rows.map((r) => [`${r.rank}.`, nm(r.id), `${r.played}/${G.rows.length - 1}`, `${r.wins} / ${r.draws} / ${r.losses}`, `${r.goalsFor}:${r.goalsAgainst}`, String(r.points)]), { size: 9 });
     const gl = lots.filter((x) => x.grp === g);
     if (G.manual) L.text(`Rozhodnutí pořadatele: pořadí skupiny ${g} bylo stanoveno ručně pořadatelem turnaje.`, { size: 9, bold: true });

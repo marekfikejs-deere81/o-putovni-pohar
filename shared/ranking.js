@@ -13,11 +13,11 @@ export const periodPoints = (own, opp) => (own > opp ? 2 : own === opp ? 1 : 0);
 /** Kontrola tvaru zápisu jednoho utkání. Vrací seznam chyb (česky). */
 export function validatePeriods(periods) {
   const errors = [];
-  if (!Array.isArray(periods)) return ['Třetiny musí být pole.'];
-  if (periods.length > 2) errors.push('Utkání má nejvýše dvě třetiny.');
+  if (!Array.isArray(periods)) return ['Poločasy musí být pole.'];
+  if (periods.length > 2) errors.push('Utkání má nejvýše dva poločasy.');
   periods.forEach((p, i) => {
     if (!Array.isArray(p) || p.length !== 2 || !p.every((n) => Number.isInteger(n) && n >= 0 && n <= 99)) {
-      errors.push(`Třetina ${i + 1}: počty branek musí být nezáporná celá čísla.`);
+      errors.push(`Poločas ${i + 1}: počty branek musí být nezáporná celá čísla.`);
     }
   });
   return errors;

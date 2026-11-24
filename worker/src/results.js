@@ -24,7 +24,7 @@ async function guarded(q, fn) {
     for (const b of before.filter((x) => x.started)) {
       const a = after.find((x) => x.place === b.place);
       if (!a || a.home !== b.home || a.away !== b.away) {
-        throw new ApiError(409, `Změna by změnila účastníky už rozehraného utkání o ${b.place}. místo. Nejdřív oprav nebo smaž jeho třetiny.`);
+        throw new ApiError(409, `Změna by změnila účastníky už rozehraného utkání o ${b.place}. místo. Nejdřív oprav nebo smaž jeho poločasy.`);
       }
     }
     await bump(q);
@@ -32,24 +32,24 @@ async function guarded(q, fn) {
   });
 }
 
-// ---------- třetiny ----------
+// ---------- poločasy ----------
 
 export async function savePeriod(q, matchId, no, body, actor) {
   const n = Number(no);
   const home = int(body?.home);
   const away = int(body?.away);
-  if (![1, 2].includes(n)) throw new ApiError(400, 'Utkání má jen 1. a 2. třetinu.');
+  if (![1, 2].includes(n)) throw new ApiError(400, 'Utkání má jen 1. a 2. poločas.');
   if (!Number.isInteger(home) || !Number.isInteger(away) || home < 0 || away < 0 || home > 99 || away > 99) throw new ApiError(422, 'Zadej počty branek jako celá čísla 0 až 99.');
   return guarded(q, async () => {
     const m = (await model(q)).matches.find((x) => x.id === Number(matchId));
     if (!m) throw new ApiError(404, 'Zápas neexistuje.');
     if (m.place && (m.home == null || m.away == null)) throw new ApiError(409, 'Utkání o umístění ještě nemá nasazené týmy.');
-    if (n === 2 && m.periods.length < 1) throw new ApiError(409, 'Nejdřív zapiš 1. třetinu.');
+    if (n === 2 && m.periods.length < 1) throw new ApiError(409, 'Nejdřív zapiš 1. poločas.');
     const [prev] = await q(`SELECT home_goals, away_goals FROM period WHERE match_id = $1 AND no = $2`, [m.id, n]);
     await q(`INSERT INTO period (match_id, no, home_goals, away_goals, confirmed_by) VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (match_id, no) DO UPDATE SET home_goals = EXCLUDED.home_goals, away_goals = EXCLUDED.away_goals,
              confirmed_by = EXCLUDED.confirmed_by, confirmed_at = now()`, [m.id, n, home, away, actor]);
-    // Oprava třetiny může zrušit shodu bodů – nájezdy pak neplatí.
+    // Oprava poločasu může zrušit shodu bodů – nájezdy pak neplatí.
     if (m.place) await q(`DELETE FROM shootout WHERE match_id = $1`, [m.id]);
     await audit(q, actor, prev ? 'period.correct' : 'period.confirm', prev ? { match: m.id, no: n, score: [prev.home_goals, prev.away_goals] } : null, { match: m.id, no: n, score: [home, away] });
     return { ok: true };
@@ -61,7 +61,7 @@ export async function deletePeriod(q, matchId, no, actor) {
   return guarded(q, async () => {
     const rows = await q(`SELECT no, home_goals, away_goals FROM period WHERE match_id = $1 ORDER BY no`, [Number(matchId)]);
     const last = rows.at(-1);
-    if (!last || last.no !== n) throw new ApiError(409, 'Smazat lze jen poslední zapsanou třetinu.');
+    if (!last || last.no !== n) throw new ApiError(409, 'Smazat lze jen poslední zapsaný poločas.');
     await q(`DELETE FROM period WHERE match_id = $1 AND no = $2`, [Number(matchId), n]);
     await q(`DELETE FROM shootout WHERE match_id = $1`, [Number(matchId)]);
     await audit(q, actor, 'period.delete', { match: Number(matchId), no: n, score: [last.home_goals, last.away_goals] }, null);
@@ -80,7 +80,7 @@ export async function setShootout(q, matchId, body, actor) {
       await q(`DELETE FROM shootout WHERE match_id = $1`, [m.id]);
     } else {
       if (!['home', 'away'].includes(winner)) throw new ApiError(422, 'Vyber vítěze nájezdů.');
-      if (m.periods.length < 2) throw new ApiError(409, 'Nájezdy lze zapsat až po obou třetinách.');
+      if (m.periods.length < 2) throw new ApiError(409, 'Nájezdy lze zapsat až po obou poločasech.');
       const pts = m.periods.reduce((s, [x, y]) => s + (x > y ? 1 : x < y ? -1 : 0), 0);
       if (pts !== 0) throw new ApiError(409, 'Utkání má vítěze podle bodů – nájezdy nejsou potřeba.');
       await q(`INSERT INTO shootout (match_id, winner, decided_by) VALUES ($1, $2, $3)

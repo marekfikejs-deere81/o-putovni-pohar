@@ -195,7 +195,7 @@ const playing = (teamId) => M.matches.some((m) => isLive(m) && (m.home === teamI
 const sideName = (m, s) => (m[s] != null ? esc(team(m[s]).name) : esc(seedLabel(m[s === 'home' ? 'homeSeed' : 'awaySeed'])));
 function status(m) {
   if (m.periods.length === 2) return m.place && m.winner === null ? 'Rozhodnou nájezdy' : 'Dohráno';
-  if (m.periods.length === 1) return isLive(m) ? '2. třetina se hraje' : 'Zapsána 1. třetina';
+  if (m.periods.length === 1) return isLive(m) ? '2. poločas se hraje' : 'Zapsán 1. poločas';
   return isLive(m) ? 'Hraje se podle rozpisu' : 'Bez zapsaného výsledku';
 }
 function halfTable(m, reverse = false) {
@@ -246,7 +246,7 @@ function matrix(g) {
     }).join('');
     return `<td${isLive(m) ? ' class="live"' : ''}><button onclick="openMatch(${m.id},${rev})" aria-label="${esc(team(i).name)} proti ${esc(team(j).name)}">${res}${isLive(m) ? '<em class="hraje">HRAJE</em>' : ''}</button></td>`;
   };
-  return `<small class="legend">Nahoře je první třetina, pod čarou druhá. Pod skóre jsou body (b.). První číslo patří týmu vlevo.</small>
+  return `<small class="legend">Nahoře je první poločas, pod čarou druhý. Pod skóre jsou body (b.). První číslo patří týmu vlevo.</small>
     <div class="matrixScroll"><table class="matrix"><tr><th>Tým</th>${ids.map((i) => `<th><span aria-label="${esc(team(i).name)}">${logo(team(i))}</span></th>`).join('')}</tr>
     ${ids.map((i) => { const r = rows.find((x) => x.id === i); return `<tr><th scope="row">${rowTeam(i)}<small class="mtotal">${M.groups[g].started ? `Skóre ${r.goalsFor}:${r.goalsAgainst} · Body <b>${r.points}</b>` : 'Skóre – · Body –'}</small></th>${ids.map((j) => cell(i, j)).join('')}</tr>`; }).join('')}
     </table></div><small class="legend">— čeká na zápis · HRAJE = aktuální dvojice podle programu</small>`;
@@ -255,8 +255,8 @@ function standings(g) {
   const G = M.groups[g];
   const n = G.rows.length - 1;
   const v = (x) => (G.started ? x : '–');
-  return `<div class="matrixScroll"><table class="standings"><tr><th title="Pořadí">Poř.</th><th>Tým</th><th class="n" title="Zápasy">Z</th><th class="n" title="Vyhrané třetiny">V</th><th class="n" title="Remízové třetiny">R</th><th class="n" title="Prohrané třetiny">P</th><th>Skóre</th><th>Body</th></tr>
-    ${G.rows.map((r) => `<tr${playing(r.id) ? ' class="live"' : ''}><td>${G.started ? `${r.rank}.` : '–'}</td><td>${rowTeam(r.id)}${playing(r.id) ? '<em class="hraje">HRAJE</em>' : ''}</td><td class="n">${r.played}</td><td class="n">${v(r.wins)}</td><td class="n">${v(r.draws)}</td><td class="n">${v(r.losses)}</td><td>${G.started ? `${r.goalsFor}:${r.goalsAgainst}` : '–'}</td><td><b>${G.started ? r.points : '–'}</b></td></tr>`).join('')}
+  return `<div class="matrixScroll"><table class="standings"><tr><th title="Pořadí">Poř.</th><th>Tým</th><th class="n" title="Odehrané poločasy">Z</th><th class="n" title="Vyhrané poločasy">V</th><th class="n" title="Remízové poločasy">R</th><th class="n" title="Prohrané poločasy">P</th><th>Skóre</th><th>Body</th></tr>
+    ${G.rows.map((r) => `<tr${playing(r.id) ? ' class="live"' : ''}><td>${G.started ? `${r.rank}.` : '–'}</td><td>${rowTeam(r.id)}${playing(r.id) ? '<em class="hraje">HRAJE</em>' : ''}</td><td class="n">${r.periods}</td><td class="n">${v(r.wins)}</td><td class="n">${v(r.draws)}</td><td class="n">${v(r.losses)}</td><td>${G.started ? `${r.goalsFor}:${r.goalsAgainst}` : '–'}</td><td><b>${G.started ? r.points : '–'}</b></td></tr>`).join('')}
     </table></div>`;
 }
 function pagePrehled() {
@@ -271,7 +271,7 @@ function pagePrehled() {
     <div class="toggle"><button class="${view === 'krizova' ? 'on' : ''}" data-view="krizova" aria-pressed="${view === 'krizova'}">Křížová tabulka</button>
     <button class="${view === 'poradi' ? 'on' : ''}" data-view="poradi" aria-pressed="${view === 'poradi'}">Průběžné pořadí</button></div>
     ${['A', 'B'].map((g) => `<div class="groupHead"><h3>Skupina ${g}</h3><small>Plocha ${g} ${RINK[g]}</small></div>${view === 'krizova' ? matrix(g) : standings(g)}`).join('')}
-    <p><small>${view === 'poradi' ? `Z = odehrané zápasy (každý tým hraje ${M.groups.A.rows.length - 1}). V / R / P = vyhrané, remízové a prohrané třetiny – body se dávají za každou třetinu (2 / 1 / 0). ` : ''}Body a skóre zahrnují každou potvrzenou třetinu.</small></p>
+    <p><small>${view === 'poradi' ? `Z = odehrané poločasy (každý tým odehraje ${(M.groups.A.rows.length - 1) * 2}). V / R / P = vyhrané, remízové a prohrané poločasy – body se dávají za každý poločas (2 / 1 / 0). ` : ''}Body a skóre zahrnují každý potvrzený poločas.</small></p>
     <div class="export">${M.reportReady
       ? `<a class="pdf" href="${api}/api/report.pdf">Stáhnout výsledky turnaje (PDF)</a><small>Kompletní zápis: propozice, všechna utkání, tabulky a konečné pořadí.</small>`
       : `<span class="pdf off" aria-disabled="true">Výsledky turnaje (PDF)</span><small>Export bude dostupný po odehrání posledního zápasu – utkání o 1. místo.</small>`}</div>`;

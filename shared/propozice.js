@@ -33,8 +33,8 @@ export const PROPOZICE = [
     title: 'Hrací doba, fauly a body',
     text: [
       'Hrací doba utkání je 2 × 14 minut s pravidelným střídáním po jedné minutě.',
-      'Po skončení každé třetiny se provedou samostatné nájezdy za fauly odpískané v dané třetině. Za každý faul získává soupeř jeden nájezd, který provede faulovaný hráč. Výsledek nájezdů se započítává do skóre.',
-      'Boduje se každá třetina zvlášť:',
+      'Po skončení každého poločasu se provedou samostatné nájezdy za fauly odpískané v daném poločase. Za každý faul získává soupeř jeden nájezd, který provede faulovaný hráč. Výsledek nájezdů se započítává do skóre.',
+      'Boduje se každý poločas zvlášť:',
     ],
     list: ['výhra – 2 body', 'remíza – 1 bod', 'prohra – 0 bodů'],
   },
@@ -42,7 +42,7 @@ export const PROPOZICE = [
     title: 'Pořadí ve skupinách',
     text: [
       'O pořadí rozhoduje počet získaných bodů. Při rovnosti bodů rozhodují postupně: výsledek vzájemného utkání, rozdíl vstřelených a obdržených branek, vyšší počet vstřelených branek, nižší počet obdržených branek, los pořadatele. Při rovnosti tří a více týmů se pro dotčené týmy vytvoří minitabulka jejich vzájemných utkání.',
-      'Upřesnění pořadatele: při shodě bodů dvou týmů rozhoduje součet branek obou třetin jejich vzájemného zápasu. Při shodném skóre rozhoduje celkový rozdíl branek ve skupině, vyšší počet vstřelených, nižší počet obdržených branek a nakonec los pořadatele. Pokud minitabulka oddělí ostatní týmy a dvojice zůstane shodná, posoudí se znovu podle skóre jejich vzájemného zápasu.',
+      'Upřesnění pořadatele: při shodě bodů dvou týmů rozhoduje součet branek obou poločasů jejich vzájemného zápasu. Při shodném skóre rozhoduje celkový rozdíl branek ve skupině, vyšší počet vstřelených, nižší počet obdržených branek a nakonec los pořadatele. Pokud minitabulka oddělí ostatní týmy a dvojice zůstane shodná, posoudí se znovu podle skóre jejich vzájemného zápasu.',
     ],
   },
   {

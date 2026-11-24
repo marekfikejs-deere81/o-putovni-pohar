@@ -26,7 +26,7 @@ export async function renderResults(app, ctx, head) {
     const n = m.periods.length;
     if (n === 2 && (!m.place || m.winner)) return '<span class="pill ok">dohráno</span>';
     if (n === 2) return '<span class="pill no" style="background:#fff7e0;color:#7a5a00">nájezdy</span>';
-    if (n === 1) return '<span class="pill no" style="background:#e8f1fb;color:#124f83">1. třetina</span>';
+    if (n === 1) return '<span class="pill no" style="background:#e8f1fb;color:#124f83">1. poločas</span>';
     return '<span class="pill no">čeká</span>';
   };
   const score = (m) => m.periods.length ? m.periods.map(([x, y]) => `${x}:${y}`).join(', ') : '';
@@ -43,7 +43,7 @@ export async function renderResults(app, ctx, head) {
       <div><b>${esc(sideName(m, 'home'))}</b> × <b>${esc(sideName(m, 'away'))}</b> <span class="muted">${score(m)}</span></div></div>${openMatch === m.id ? editor(m, ctx) : ''}`; }).join('')}</section>` : '';
   const quickIds = new Set(quick ? quick.games : []);
   app.innerHTML = `${ctx.head()}${quickHtml}<section class="card"><h2>Všechny zápasy</h2>
-    <div class="muted">Klepni na zápas. Každou třetinu potvrď zvlášť – na web a stadion se dostane do 5 s. Branky včetně nájezdů za fauly.</div>
+    <div class="muted">Klepni na zápas. Každý poločas potvrď zvlášť – na web a stadion se dostane do 5 s. Branky včetně nájezdů za fauly.</div>
     ${M.blocks.filter((b) => b.games.length).map((b) => `<h3 style="margin:16px 0 6px">${toHHMM(b.from)}–${toHHMM(b.to)}</h3>
       ${b.games.map((id) => { const m = M.matches.find((x) => x.id === id); return `<div class="mrow" data-m="${m.id}" style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer">
         <div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span class="muted">Plocha ${m.rink}${m.place ? ` · o ${m.place}. místo` : ''}</span>${chip(m)}</div>
@@ -61,18 +61,18 @@ function editor(m, ctx) {
   const row = (no) => {
     const p = m.periods[no - 1];
     const can = no === 1 || m.periods.length >= 1;
-    if (!can) return `<div class="muted" style="margin:8px 0">${no}. třetina – nejdřív potvrď 1. třetinu</div>`;
+    if (!can) return `<div class="muted" style="margin:8px 0">${no}. poločas – nejdřív potvrď 1. poločas</div>`;
     const isLast = m.periods.length === no;
     return `<form class="per" data-no="${no}" style="margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px">
-      <div style="font-weight:700;margin-bottom:6px">${no}. třetina ${p ? `<span class="pill ok">potvrzeno ${p[0]}:${p[1]}</span>` : ''}</div>
+      <div style="font-weight:700;margin-bottom:6px">${no}. poločas ${p ? `<span class="pill ok">potvrzeno ${p[0]}:${p[1]}</span>` : ''}</div>
       <div style="display:grid;grid-template-columns:1fr 70px 14px 70px 1fr;gap:6px;align-items:center">
         <span style="text-align:right">${logo(m.home, esc)} ${esc(team(m.home).code)}</span>
-        <input name="home" inputmode="numeric" pattern="[0-9]*" value="${p ? p[0] : ''}" aria-label="${no}. třetina ${esc(team(m.home).name)}" style="font-size:24px;text-align:center;font-weight:800">
+        <input name="home" inputmode="numeric" pattern="[0-9]*" value="${p ? p[0] : ''}" aria-label="${no}. poločas ${esc(team(m.home).name)}" style="font-size:24px;text-align:center;font-weight:800">
         <b style="text-align:center">:</b>
-        <input name="away" inputmode="numeric" pattern="[0-9]*" value="${p ? p[1] : ''}" aria-label="${no}. třetina ${esc(team(m.away).name)}" style="font-size:24px;text-align:center;font-weight:800">
+        <input name="away" inputmode="numeric" pattern="[0-9]*" value="${p ? p[1] : ''}" aria-label="${no}. poločas ${esc(team(m.away).name)}" style="font-size:24px;text-align:center;font-weight:800">
         <span>${esc(team(m.away).code)} ${logo(m.away, esc)}</span></div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn" type="submit">${p ? 'Opravit' : 'Potvrdit'} ${no}. třetinu</button>
-      ${p && isLast ? `<button class="btn secondary" type="button" data-del="${no}">Smazat ${no}. třetinu</button>` : ''}</div></form>`;
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn" type="submit">${p ? 'Opravit' : 'Potvrdit'} ${no}. poločas</button>
+      ${p && isLast ? `<button class="btn secondary" type="button" data-del="${no}">Smazat ${no}. poločas</button>` : ''}</div></form>`;
   };
   let so = '';
   if (m.place && m.periods.length === 2) {
@@ -94,16 +94,16 @@ function wireEditor(app, ctx, head) {
       const no = Number(f.dataset.no);
       const h = f.home.value.trim(), a = f.away.value.trim();
       if (!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(a)) { alert('Zadej počty branek (celá čísla).'); return; }
-      if (!confirm(`${m.periods[no - 1] ? 'Opravit' : 'Potvrdit'} ${no}. třetinu:\n${team(m.home).name} ${h} : ${a} ${team(m.away).name}?`)) return;
+      if (!confirm(`${m.periods[no - 1] ? 'Opravit' : 'Potvrdit'} ${no}. poločas:\n${team(m.home).name} ${h} : ${a} ${team(m.away).name}?`)) return;
       f.querySelector('button[type=submit]').disabled = true;
-      try { await ctx.call('PUT', `/api/admin/matches/${m.id}/periods/${no}`, { home: Number(h), away: Number(a) }); ctx.flash('ok', `${no}. třetina uložena.`); }
+      try { await ctx.call('PUT', `/api/admin/matches/${m.id}/periods/${no}`, { home: Number(h), away: Number(a) }); ctx.flash('ok', `${no}. poločas uložen.`); }
       catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
       renderResults(app, ctx, head);
     };
   });
   ed.querySelectorAll('[data-del]').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation();
-    if (!confirm(`Opravdu smazat ${b.dataset.del}. třetinu?`)) return;
+    if (!confirm(`Opravdu smazat ${b.dataset.del}. poločas?`)) return;
     try { await ctx.call('DELETE', `/api/admin/matches/${m.id}/periods/${b.dataset.del}`); ctx.flash('ok', 'Třetina smazána.'); }
     catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
     renderResults(app, ctx, head);
@@ -331,7 +331,7 @@ export async function renderTips(app, ctx, head) {
 
 // ---------- Historie ----------
 const ACTION = {
-  'period.confirm': 'Potvrzena třetina', 'period.correct': 'Opravena třetina', 'period.delete': 'Smazána třetina', 'shootout.set': 'Nájezdy',
+  'period.confirm': 'Potvrzen poločas', 'period.correct': 'Opraven poločas', 'period.delete': 'Smazán poločas', 'shootout.set': 'Nájezdy',
   'lot.set': 'Los', 'lot.clear': 'Los zrušen', 'manual_order.set': 'Ruční pořadí', 'schedule.shift': 'Posun rozpisu', 'team.update': 'Úprava týmu',
   'tip.add': 'Přidán tip', 'tip.update': 'Upraven tip', 'tip.move': 'Změna pořadí tipů', 'tip.delete': 'Odebrán tip', 'propozice_pdf.upload': 'Nahráno PDF propozic', 'propozice_pdf.delete': 'Odebráno PDF propozic', 'lunch.settings': 'Cena a menu obědu', 'lunch_order.save': 'Objednávka obědů', 'team_access.generate': 'Nové odkazy týmů',
   'gmail.paired': 'Spárován Gmail', 'mail.retry': 'Znovu odeslat e-mail', 'mail.mark-sent': 'E-mail potvrzen ručně', 'admin_user.add': 'Přidán správce',

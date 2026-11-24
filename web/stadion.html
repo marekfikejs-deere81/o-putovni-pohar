@@ -107,7 +107,7 @@ function rink(e, r) {
   if (!m) return '<article class="rink"><b class="idle">Volno</b></article>';
   const side = (k) => { const img = data.clubs[m[k]]?.img; return '<div class="side">' + (img ? '<img src="' + esc(img) + '" alt="">' : '') + '<span>' + esc(name(m, k)) + '</span></div>'; };
   const goals = m.periods.reduce(([a, b], [x, y]) => [a + x, b + y], [0, 0]);
-  const result = m.periods.length ? '<span class="result">' + goals.join(':') + ' po ' + m.periods.length + '. třetině</span>' : '';
+  const result = m.periods.length ? '<span class="result">' + goals.join(':') + ' po ' + m.periods.length + '. poločase</span>' : '';
   return '<article class="rink">' + (m.place ? '<span class="place">O ' + m.place + '. místo</span>' : '') + result + side('a') + '<div class="score">×</div>' + side('b') + '</article>';
 }
 // Ukázková data (jen ?ukazka=…, nikdy se neukládají)
