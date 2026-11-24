@@ -94,6 +94,11 @@ details dd{margin:0}
 details ul{padding-left:20px;margin:4px 0 10px}
 details p{margin:6px 0 10px}
 dialog{border:0;border-radius:14px;max-width:min(92vw,420px);padding:16px}
+dialog.wide{max-width:min(96vw,900px);width:96vw;padding:10px}
+.exp{margin:12px 0;padding:10px 12px;border:1px solid #d9e4ee;border-radius:10px;background:#f6f9fc;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.exp-btns{display:flex;gap:6px}
+.exp button{border:1px solid #124f83;background:#fff;color:#124f83;font-weight:700;border-radius:8px;padding:7px 11px;font-size:14px}
+.exp button:first-child,.exp button:nth-child(2){background:#124f83;color:#fff}
 dialog::backdrop{background:rgba(10,25,40,.45)}
 dialog h3{margin-top:0}
 .status{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#557184;padding:6px 18px;background:#f6f9fb;border-bottom:1px solid #e3ebf1}
@@ -284,9 +289,33 @@ function fixture(id) {
     <small>Plocha ${m.rink} ${RINK[m.rink]} · ${m.place ? `O ${m.place}. místo` : `Skupina ${m.rink}`} · ${status(m)}</small>
     <div class="teams">${side('home', 0)}${side('away', 1)}</div>${isLive(m) ? '<em class="hraje">HRAJE SE</em>' : ''}</div>`;
 }
+// Stažení rozpisu / obědových oken – stejný kód a stejná data (/api/public) jako v Adminu.
+function exportBox(kind, title) {
+  return `<div class="exp"><b>${title}</b><div class="exp-btns"><button data-exp="${kind}" data-as="jpg">JPEG</button><button data-exp="${kind}" data-as="pdf">PDF</button><button data-exp="${kind}" data-as="show">Náhled</button></div></div>`;
+}
+async function runExport(btn) {
+  const kind = btn.dataset.exp, as = btn.dataset.as, label = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const { scheduleFiles, download } = await import('./rozpis-export.js');
+    const f = await scheduleFiles(M, '', kind);
+    const name = kind === 'obedy' ? 'obedy-casova-okna-o-putovni-pohar-2026' : 'rozpis-o-putovni-pohar-2026';
+    if (as === 'jpg') download(f.jpg, `${name}.jpg`);
+    else if (as === 'pdf') download(f.pdf, `${name}.pdf`);
+    else {
+      const d = $('dlg');
+      d.classList.add('wide');
+      d.querySelector('article').innerHTML = `<img src="${URL.createObjectURL(f.jpg)}" alt="${kind === 'obedy' ? 'Obědová okna' : 'Časový rozpis'}" style="width:100%;display:block;border:1px solid #d3d8e0;border-radius:8px">`;
+      d.addEventListener('close', () => d.classList.remove('wide'), { once: true });
+      d.showModal();
+    }
+  } catch (e) { alert('Soubor se nepodařilo vytvořit. Zkus to prosím znovu.'); }
+  btn.disabled = false; btn.textContent = label;
+}
+
 function pageProgram() {
   const cur = currentBlock();
-  let s = `<h2>Program turnaje</h2>${banner()}<p class="note"><b>Plocha A</b> pod časomírou · <b>Plocha B</b> pod restaurací</p>`;
+  let s = `<h2>Program turnaje</h2>${banner()}${exportBox('rozpis', 'Časový rozpis ke stažení')}<p class="note"><b>Plocha A</b> pod časomírou · <b>Plocha B</b> pod restaurací</p>`;
   for (const b of M.blocks) {
     const c = b === cur;
     const inner = b.games.length
@@ -340,7 +369,7 @@ function pageObedy() {
         return `<div class="meal">${ts.map((x) => logo(x)).join('')}<span>${esc(o?.label ?? team(tid).name)}</span><span class="cnt">${cnt}</span></div>${gap}`;
       }).join('');
       return `<div class="card${cur ? ' live' : ''}"><b>${toHHMM(l.from)}–${toHHMM(l.to)}</b>${cur ? ' · <b>právě obědvají</b>' : ''}${items}</div>`;
-    }).join('')}`;
+    }).join('')}${exportBox('obedy', 'Obědová okna ke stažení')}`;
 }
 
 // ---------- Propozice a Pro rodiče ----------
@@ -380,6 +409,8 @@ function render() {
   window.scrollTo(0, y);
 }
 document.addEventListener('click', (e) => {
+  const ex = e.target.closest('[data-exp]');
+  if (ex) { runExport(ex); return; }
   const p = e.target.closest('[data-page]');
   if (p) {
     page = p.dataset.page; history.replaceState(null, '', `${location.search}#${page}`); render();
