@@ -239,7 +239,12 @@ export async function drawLunches(M, base = '') {
   const pause = M.blocks.find((x) => !x.games.length && /poledn/i.test(x.title));
   const words = { 1: 'jeden tým', 2: 'dva týmy', 3: 'tři týmy', 4: 'čtyři týmy' };
   const minLen = lens.length === 1 ? `${lens[0]} minut` : `${Math.min(...lens)}–${Math.max(...lens)} minut`;
-  const subtitle = `Začátek v ${hm(M.blocks[0].from)}${pause ? `, polední pauza ${hm(pause.from)}–${hm(pause.to)}` : ''} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'}, oběd ${minLen}`;
+  // směny: okna se nepřekrývají (každé začíná až po konci předchozího)
+  const ws = [...M.lunches].sort((a, b) => a.from - b.from);
+  const shifts = ws.every((l, i) => i === 0 || l.from >= ws[i - 1].to);
+  const cz = (n) => ({ 1: 'jedna', 2: 'dvě', 3: 'tři', 4: 'čtyři' }[n] || n);
+  const subtitleOld = `Začátek v ${hm(M.blocks[0].from)}${pause ? `, polední pauza ${hm(pause.from)}–${hm(pause.to)}` : ''} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'}, oběd ${minLen}`;
+  const subtitle = shifts ? `Začátek v ${hm(M.blocks[0].from)} · ${ws.length} ${ws.length < 5 ? 'směny' : 'směn'}, týmy se střídají` : subtitleOld;
 
   const L0 = 148;
   const wrap = (str, size, bold, max) => {
@@ -268,7 +273,7 @@ export async function drawLunches(M, base = '') {
     const prev = uniq(each.map((e) => e.prevEnd)), next = uniq(each.map((e) => e.nextStart)), after = uniq(each.map((e) => e.after));
     // tučné názvy týmů, za nimi obyčejně délka oběda (když nemají všechna okna stejnou délku)
     const tokens = ts.map(lname).join(' + ').split(' ').map((w) => ({ w, b: true }));
-    if (lens.length > 1) `(${l.to - l.from} min)`.split(' ').forEach((w) => tokens.push({ w, b: false }));
+    if (lens.length > 1 && !shifts) `(${l.to - l.from} min)`.split(' ').forEach((w) => tokens.push({ w, b: false }));
     const maxW = cols[2] - cols[1] - 2 * PAD, teamLines = [];
     let cur = [], curW = 0;
     for (const tk of tokens) {
@@ -295,9 +300,18 @@ export async function drawLunches(M, base = '') {
 
   const all = per.flatMap((r) => r.each);
   const bef = all.map((e) => e.before).filter((v) => v !== null), aft = all.map((e) => e.after).filter((v) => v !== null);
+  // u směn: běžná délka oběda a výjimky („2. a 3. směna 25 minut“)
+  const lenOf = (l) => l.to - l.from;
+  const counts = {}; ws.forEach((l) => { counts[lenOf(l)] = (counts[lenOf(l)] || 0) + 1; });
+  const common = Number(Object.keys(counts).sort((a, b) => counts[b] - counts[a] || b - a)[0]);
+  const exc = {}; ws.forEach((l, i) => { if (lenOf(l) !== common) (exc[lenOf(l)] ||= []).push(`${i + 1}.`); });
+  const andJoin = (a) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} a ${a.at(-1)}` : a[0]);
+  const excText = Object.entries(exc).map(([len, list]) => `${andJoin(list)} směna ${len} minut`).join(', ');
+  const sizes = ws.map((l) => l.teams.length);
+  const sizeText = Math.min(...sizes) === Math.max(...sizes) ? `${sizes[0]}` : `${Math.min(...sizes)}–${Math.max(...sizes)}`;
   const note = [
-    `Oběd trvá ${minLen}${lens.length > 1 ? ' podle času do dalšího zápasu' : ''}.`,
-    `V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}.`,
+    shifts ? 'Týmy se v restauraci střídají po směnách: celá směna přichází a odchází společně, další směna přichází až po odchodu předchozí.' : `Oběd trvá ${minLen}${lens.length > 1 ? ' podle času do dalšího zápasu' : ''}.`,
+    shifts ? `Směna má ${sizeText} ${Math.max(...sizes) < 5 ? 'týmy' : 'týmů'}, oběd trvá ${common} minut${excText ? ` (${excText})` : ''}.` : `V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}.`,
     bef.length ? `Po zápase je vždy nejméně ${Math.min(...bef)} minut na převlečení${aft.length ? `, nejkratší odstup od konce oběda do dalšího zápasu je ${Math.min(...aft)} minut.` : '.'}` : '',
   ].join(' ').trim();
   y += 46;

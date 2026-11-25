@@ -22,31 +22,31 @@ test('Prázdný turnaj: model ze seedu, pořadí „–“, obědy z kotev, nasa
   const m = await model();
   assert.equal(m.revision, 0);
   assert.equal(m.teams.length, 10);
-  assert.deepEqual(m.teams.filter((t) => t.group === 'A').map((t) => t.code), ['VLA', 'BEN', 'CEB', 'MBL', 'LIT']);
+  assert.deepEqual(m.teams.filter((t) => t.group === 'A').map((t) => t.code), ['BEN', 'VLA', 'CEB', 'MBL', 'LIT']);
   assert.equal(m.blocks.length, 20);
   assert.equal(m.blocks[0].from, 470); // 7:50
   assert.equal(m.blocks.at(-1).to, 1080);
   assert.equal(m.matches.length, 25);
   assert.equal(m.groups.A.started, false);
   assert.ok(m.matches.filter((x) => x.place).every((x) => x.home === null && x.away === null));
-  assert.deepEqual(m.lunches.map((l) => l.from), [640, 690, 690, 715, 725, 750]); // 10:40, 11:30, 11:30, 11:55, 12:05, 12:30
+  assert.deepEqual(m.lunches.map((l) => l.from), [640, 690, 725, 755]); // 10:40, 11:30, 12:05, 12:35
   assert.equal(m.tournament.lunch.deadline, '2026-12-12T23:00:00Z');
   assert.deepEqual(m.tournament.lunch.prices, { player: 140, staff: 150 });
 });
 
 test('Přejímka 0:0 a 1:2 + 5:3 přes databázi', async () => {
   const { exec, model } = await setup();
-  await exec(P(0, 1, 0, 0)); // VLA × BEN
+  await exec(P(0, 1, 0, 0)); // BEN × VLA
   let m = await model();
   const row = (g, code) => m.groups[g].rows.find((r) => r.id === m.teams.find((t) => t.code === code).id);
   assert.equal(m.groups.A.started, true);
   assert.equal(m.groups.B.started, false);
   assert.deepEqual([row('A', 'VLA').points, row('A', 'VLA').periods, row('A', 'VLA').draws], [1, 1, 1]);
-  await exec(P(1, 1, 1, 2)); // VLB × KOB
+  await exec(P(1, 1, 1, 2)); // SVE × VLB
   await exec(P(1, 2, 5, 3));
   m = await model();
   const vlb = row('B', 'VLB');
-  assert.deepEqual([vlb.goalsFor, vlb.goalsAgainst, vlb.points, vlb.played], [6, 5, 2, 1]);
+  assert.deepEqual([vlb.goalsFor, vlb.goalsAgainst, vlb.points, vlb.played], [5, 6, 2, 1]);
   assert.deepEqual(m.matches.find((x) => x.id === 1).periods, [[1, 2], [5, 3]]);
 });
 

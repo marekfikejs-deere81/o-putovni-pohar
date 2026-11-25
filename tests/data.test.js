@@ -87,7 +87,7 @@ test('Přejímka „Časy“: hraniční okamžiky', () => {
   assert.equal(at('17:30').title, 'Vyhlášení výsledků a předání cen');
   assert.equal(at('18:00'), null);
   const next = nextGameBlock(blocks, toMinutes('09:00'));
-  assert.deepEqual(next.games.map((x) => `${x.home}×${x.away}`), ['BEN×LIT', 'SVE×PLZ']);
+  assert.deepEqual(next.games.map((x) => `${x.home}×${x.away}`), ['VLA×LIT', 'VLB×PLZ']);
   assert.equal(minutesUntil(next.from, toMinutes('09:00') * 60), 15);
   assert.equal(minutesUntil(next.from, toMinutes('09:00') * 60 + 1), 15); // zaokrouhleno nahoru
 });
@@ -101,9 +101,10 @@ test('Přejímka „Stadion“: rotace 10 s při úpravě ledu v 09:10', () => {
   assert.deepEqual(icePhase(toMinutes('09:10'), s(40)), { view: 'krizova', group: 'A' });
 });
 
-test('Obědy: 6 oken po 25–30 min, nejvýše 3 týmy v restauraci, 10 týmů, časy z kotev, žádná kolize s vlastním zápasem', () => {
+test('Obědy: 4 směny po 25–30 min, střídají se bez překryvu, nejvýše 3 týmy, 10 týmů, časy z kotev, žádná kolize s vlastním zápasem', () => {
   const windows = lunchWindows(lunches, blocks);
-  assert.equal(windows.length, 6);
+  assert.equal(windows.length, 4);
+  for (let i = 1; i < windows.length; i++) assert.ok(windows[i].from >= windows[i - 1].to, `směna ${i + 1} začne až po předchozí`);
   assert.ok(windows.every((w) => [25, 30].includes(w.to - w.from)));
   // v každém okamžiku nejvýše 3 týmy v restauraci
   for (const w of windows) assert.ok(windows.filter((o) => o.from <= w.from && o.to > w.from).reduce((n, o) => n + o.teams.length, 0) <= 3, w.start);

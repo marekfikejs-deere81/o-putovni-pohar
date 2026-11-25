@@ -67,12 +67,12 @@ test('Tokeny: 9 odkazů, v DB jen otisk, nový odkaz zneplatní starý', async (
   assert.equal(newToken().length, 6);
 });
 
-test('Tým: pohled bez cizích dat, Vlašim A+B společně, oběd 10:40', async () => {
+test('Tým: pohled bez cizích dat, Vlašim A+B společně, oběd 12:35', async () => {
   const { q, tok } = await setup();
   const v = await teamOrderView(q, tok.VLS, BEFORE);
   assert.equal(v.label, 'HC Rytíři Vlašim A + B');
   assert.deepEqual(v.teams.map((t) => t.code), ['VLA', 'VLB']);
-  assert.deepEqual(v.lunch, [{ from: 640, to: 670 }]);
+  assert.deepEqual(v.lunch, [{ from: 755, to: 785 }]);
   assert.equal(v.order, null);
   assert.equal(v.closed, false);
   await assert.rejects(teamOrderView(q, await hashToken('zzzzzz'), BEFORE), (e) => e.status === 404);

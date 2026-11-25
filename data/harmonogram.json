@@ -9,16 +9,16 @@
         "id": 0,
         "rink": "A",
         "place": null,
-        "home": "VLA",
-        "away": "BEN",
+        "home": "BEN",
+        "away": "VLA",
         "periods": []
       },
       {
         "id": 1,
         "rink": "B",
         "place": null,
-        "home": "VLB",
-        "away": "SVE",
+        "home": "SVE",
+        "away": "VLB",
         "periods": []
       }
     ]
@@ -64,7 +64,7 @@
         "id": 4,
         "rink": "A",
         "place": null,
-        "home": "BEN",
+        "home": "VLA",
         "away": "LIT",
         "periods": []
       },
@@ -72,7 +72,7 @@
         "id": 5,
         "rink": "B",
         "place": null,
-        "home": "SVE",
+        "home": "VLB",
         "away": "PLZ",
         "periods": []
       }
@@ -88,7 +88,7 @@
         "id": 6,
         "rink": "A",
         "place": null,
-        "home": "VLA",
+        "home": "BEN",
         "away": "CEB",
         "periods": []
       },
@@ -96,7 +96,7 @@
         "id": 7,
         "rink": "B",
         "place": null,
-        "home": "VLB",
+        "home": "SVE",
         "away": "SLA",
         "periods": []
       }
@@ -143,7 +143,7 @@
         "id": 10,
         "rink": "A",
         "place": null,
-        "home": "BEN",
+        "home": "VLA",
         "away": "CEB",
         "periods": []
       },
@@ -151,7 +151,7 @@
         "id": 11,
         "rink": "B",
         "place": null,
-        "home": "SVE",
+        "home": "VLB",
         "away": "SLA",
         "periods": []
       }
@@ -174,7 +174,7 @@
         "id": 12,
         "rink": "A",
         "place": null,
-        "home": "VLA",
+        "home": "BEN",
         "away": "MBL",
         "periods": []
       },
@@ -182,7 +182,7 @@
         "id": 13,
         "rink": "B",
         "place": null,
-        "home": "VLB",
+        "home": "SVE",
         "away": "KOB",
         "periods": []
       }
@@ -229,7 +229,7 @@
         "id": 16,
         "rink": "A",
         "place": null,
-        "home": "BEN",
+        "home": "VLA",
         "away": "MBL",
         "periods": []
       },
@@ -237,7 +237,7 @@
         "id": 17,
         "rink": "B",
         "place": null,
-        "home": "SVE",
+        "home": "VLB",
         "away": "KOB",
         "periods": []
       }
@@ -253,7 +253,7 @@
         "id": 18,
         "rink": "A",
         "place": null,
-        "home": "VLA",
+        "home": "BEN",
         "away": "LIT",
         "periods": []
       },
@@ -261,7 +261,7 @@
         "id": 19,
         "rink": "B",
         "place": null,
-        "home": "VLB",
+        "home": "SVE",
         "away": "PLZ",
         "periods": []
       }

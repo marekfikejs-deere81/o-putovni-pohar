@@ -12,7 +12,7 @@ export const PUBLIC_QUERIES = {
   shootouts: `SELECT match_id, winner FROM shootout`,
   lots: `SELECT grp, team_id, position FROM lot WHERE tournament_id = $1`,
   lunches: `SELECT id, anchor_block_id, offset_min, length_min, frozen_start FROM lunch_window ORDER BY id`,
-  lunchTeams: `SELECT window_id, team_id FROM lunch_window_team`,
+  lunchTeams: `SELECT window_id, team_id FROM lunch_window_team ORDER BY window_id, ctid`, // pořadí vložení = pořadí v rozpisu
   propozicePdf: `SELECT filename, octet_length(bytes)::int AS size, version FROM propozice_pdf WHERE id = 1`,
   tips: `SELECT id, title, body, address, url, web_url FROM parent_tip ORDER BY sort, id`,
   // Veřejně jen počty – žádné e-maily ani poznámky.
