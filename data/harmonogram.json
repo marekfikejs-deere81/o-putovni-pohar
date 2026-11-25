@@ -160,14 +160,14 @@
   {
     "id": 8,
     "start": "11:50",
-    "end": "12:50",
+    "end": "12:40",
     "title": "Úprava ledu + polední pauza",
     "games": []
   },
   {
     "id": 9,
-    "start": "12:50",
-    "end": "13:25",
+    "start": "12:40",
+    "end": "13:15",
     "title": "Skupiny",
     "games": [
       {
@@ -190,8 +190,8 @@
   },
   {
     "id": 10,
-    "start": "13:25",
-    "end": "14:00",
+    "start": "13:15",
+    "end": "13:50",
     "title": "Skupiny",
     "games": [
       {
@@ -214,15 +214,15 @@
   },
   {
     "id": 11,
-    "start": "14:00",
-    "end": "14:15",
+    "start": "13:50",
+    "end": "14:05",
     "title": "Úprava ledu",
     "games": []
   },
   {
     "id": 12,
-    "start": "14:15",
-    "end": "14:50",
+    "start": "14:05",
+    "end": "14:40",
     "title": "Skupiny",
     "games": [
       {
@@ -245,8 +245,8 @@
   },
   {
     "id": 13,
-    "start": "14:50",
-    "end": "15:25",
+    "start": "14:40",
+    "end": "15:15",
     "title": "Skupiny",
     "games": [
       {
@@ -269,15 +269,15 @@
   },
   {
     "id": 14,
-    "start": "15:25",
-    "end": "15:40",
+    "start": "15:15",
+    "end": "15:30",
     "title": "Úprava ledu",
     "games": []
   },
   {
     "id": 15,
-    "start": "15:40",
-    "end": "16:15",
+    "start": "15:30",
+    "end": "16:05",
     "title": "Utkání o umístění",
     "games": [
       {
@@ -300,8 +300,8 @@
   },
   {
     "id": 16,
-    "start": "16:15",
-    "end": "16:50",
+    "start": "16:05",
+    "end": "16:40",
     "title": "Utkání o umístění",
     "games": [
       {
@@ -324,15 +324,15 @@
   },
   {
     "id": 17,
-    "start": "16:50",
-    "end": "17:05",
+    "start": "16:40",
+    "end": "16:55",
     "title": "Úprava ledu",
     "games": []
   },
   {
     "id": 18,
-    "start": "17:05",
-    "end": "17:40",
+    "start": "16:55",
+    "end": "17:30",
     "title": "Utkání o umístění",
     "games": [
       {
@@ -347,7 +347,7 @@
   },
   {
     "id": 19,
-    "start": "17:40",
+    "start": "17:30",
     "end": "18:00",
     "title": "Vyhlášení výsledků a předání cen",
     "games": []

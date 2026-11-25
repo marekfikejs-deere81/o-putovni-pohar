@@ -55,7 +55,8 @@ export async function drawSchedule(M, base = '') {
   text('Ročník 2019 · pondělí 28. 12. 2026 · Zimní stadion Vlašim · časový rozpis', 136, y, { size: 30, color: GRAY });
   y += 48;
   const pauseR = M.blocks.find((x) => !x.games.length && /poledn/i.test(x.title));
-  text(`Začátek v ${hm(M.blocks[0].from)}${pauseR ? ` · polední pauza ${hm(pauseR.from)}–${hm(pauseR.to)}` : ''}`, 136, y, { size: 30, bold: true, color: BLUE });
+  const finalB = M.blocks.find((x) => x.games.some((id) => M.matches.find((mm) => mm.id === id)?.place === 1));
+  text(`Začátek v ${hm(M.blocks[0].from)}${finalB ? `, finále končí ${hm(finalB.to)}` : pauseR ? ` · polední pauza ${hm(pauseR.from)}–${hm(pauseR.to)}` : ''}`, 136, y, { size: 30, bold: true, color: BLUE });
   y += 38;
 
   // --- skupiny ---
@@ -217,7 +218,7 @@ const lname = (t) => (t ? LSHORT[t.code] || t.name : '');
 
 export async function drawLunches(M, base = '') {
   await loadFonts(base);
-  const LW = 1800, LH = 1040; // jako předloha; v PDF na stránce A4 na šířku nahoře
+  const LW = 1800, LH = 2000; // kreslí se do vysokého plátna, na konci se ořízne na obsah (nejméně 1040 px jako předloha)
   const c = document.createElement('canvas');
   c.width = LW; c.height = LH;
   const g = c.getContext('2d');
@@ -238,7 +239,7 @@ export async function drawLunches(M, base = '') {
   const pause = M.blocks.find((x) => !x.games.length && /poledn/i.test(x.title));
   const words = { 1: 'jeden tým', 2: 'dva týmy', 3: 'tři týmy', 4: 'čtyři týmy' };
   const minLen = lens.length === 1 ? `${lens[0]} minut` : `${Math.min(...lens)}–${Math.max(...lens)} minut`;
-  const subtitle = `Začátek v ${hm(M.blocks[0].from)} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'} v restauraci, oběd ${minLen}`;
+  const subtitle = `Začátek v ${hm(M.blocks[0].from)}${pause ? `, polední pauza ${hm(pause.from)}–${hm(pause.to)}` : ''} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'}, oběd ${minLen}`;
 
   const L0 = 148;
   const wrap = (str, size, bold, max) => {
@@ -265,11 +266,23 @@ export async function drawLunches(M, base = '') {
   const uniq = (arr) => [...new Set(arr.filter((v) => v !== null))];
   per.forEach(({ l, ts, each }, i) => {
     const prev = uniq(each.map((e) => e.prevEnd)), next = uniq(each.map((e) => e.nextStart)), after = uniq(each.map((e) => e.after));
-    const teamLines = wrap(ts.map(lname).join(' + '), 28, true, cols[2] - cols[1] - 2 * PAD);
+    // tučné názvy týmů, za nimi obyčejně délka oběda (když nemají všechna okna stejnou délku)
+    const tokens = ts.map(lname).join(' + ').split(' ').map((w) => ({ w, b: true }));
+    if (lens.length > 1) `(${l.to - l.from} min)`.split(' ').forEach((w) => tokens.push({ w, b: false }));
+    const maxW = cols[2] - cols[1] - 2 * PAD, teamLines = [];
+    let cur = [], curW = 0;
+    for (const tk of tokens) {
+      font(28, tk.b); const ww = g.measureText(tk.w).width, sp = cur.length ? g.measureText(' ').width : 0;
+      if (cur.length && curW + sp + ww > maxW) { teamLines.push(cur); cur = [tk]; curW = ww; } else { cur.push(tk); curW += sp + ww; }
+    }
+    if (cur.length) teamLines.push(cur);
     const RH = teamLines.length > 1 ? 94 : 60;
     if (i % 2) { g.fillStyle = ZEBRA; g.fillRect(L, y, TW, RH); }
     text(`${hm(l.from)}–${hm(l.to)}`, cols[0] + PAD, y + RH / 2, 28);
-    teamLines.forEach((ln, k) => text(ln, cols[1] + PAD, y + RH / 2 + (k - (teamLines.length - 1) / 2) * 35, 28, { bold: true }));
+    teamLines.forEach((ln, k) => {
+      let x = cols[1] + PAD; const yy = y + RH / 2 + (k - (teamLines.length - 1) / 2) * 35;
+      ln.forEach((tk, j) => { font(28, tk.b); if (j) x += g.measureText(' ').width; text(tk.w, x, yy, 28, { bold: tk.b }); font(28, tk.b); x += g.measureText(tk.w).width; });
+    });
     text(prev.length ? prev.map(hm).join(' / ') : '–', cols[2] + PAD, y + RH / 2, 28);
     text(next.length ? next.map(hm).join(' / ') : '–', cols[3] + PAD, y + RH / 2, 28);
     text(after.length ? `${after.join(' / ')} min` : '–', cols[4] + PAD, y + RH / 2, 28);
@@ -283,12 +296,18 @@ export async function drawLunches(M, base = '') {
   const all = per.flatMap((r) => r.each);
   const bef = all.map((e) => e.before).filter((v) => v !== null), aft = all.map((e) => e.after).filter((v) => v !== null);
   const note = [
-    `Oběd trvá ${minLen}.`,
+    `Oběd trvá ${minLen}${lens.length > 1 ? ' podle času do dalšího zápasu' : ''}.`,
     `V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}.`,
     bef.length ? `Po zápase je vždy nejméně ${Math.min(...bef)} minut na převlečení${aft.length ? `, nejkratší odstup od konce oběda do dalšího zápasu je ${Math.min(...aft)} minut.` : '.'}` : '',
   ].join(' ').trim();
   y += 46;
   for (const ln of wrap(note, 28, false, TW - 2 * PAD)) { text(ln, L0, y, 28); y += 40; }
   stampAt(g, R, y + 10);
-  return c;
+  // oříznout na obsah
+  const out = document.createElement('canvas');
+  out.width = LW; out.height = Math.max(1040, Math.ceil(y + 70));
+  const o = out.getContext('2d');
+  o.fillStyle = '#fff'; o.fillRect(0, 0, out.width, out.height);
+  o.drawImage(c, 0, 0);
+  return out;
 }

@@ -126,16 +126,16 @@ test('Posun rozpisu: +10 min od 10:25 posune bloky i navázané obědy; minulost
   const at = (h, m) => h * 60 + m;
   const pre = await shiftSchedule(q, { blockId: 5, minutes: 10, mode: 'start' }, A, at(9, 0), false);
   assert.equal(pre.blocks[0].from[1], at(10, 35));
-  assert.deepEqual(pre.lunches.map((l) => l.from), [[at(10, 45), at(10, 55)], [at(11, 30), at(11, 40)], [at(12, 5), at(12, 15)], [at(12, 35), at(12, 45)]]);
+  assert.deepEqual(pre.lunches.map((l) => l.from), [[at(10, 40), at(10, 50)], [at(11, 30), at(11, 40)], [at(11, 30), at(11, 40)], [at(11, 55), at(12, 5)], [at(12, 5), at(12, 15)], [at(12, 30), at(12, 40)]]);
   let M = await model(q);
   assert.equal(M.blocks.find((b) => b.id === 5).from, at(10, 25)); // náhled nic nezměnil
-  // Prodloužení probíhajícího bloku 11:15–11:50 o 5 min v 11:40: oběd 10:45 i 11:30 už začal → zamrznou
+  // Prodloužení probíhajícího bloku 11:15–11:50 o 5 min v 11:40: obědy 10:40 a 11:30 už začaly → zamrznou; 11:55 je navázaný na začátek bloku 7, ten se nemění
   await shiftSchedule(q, { blockId: 7, minutes: 5, mode: 'extend' }, A, at(11, 40), true);
   M = await model(q);
   const b7 = M.blocks.find((b) => b.id === 7);
   assert.deepEqual([b7.from, b7.to], [at(11, 15), at(11, 55)]);
   assert.equal(M.blocks.find((b) => b.id === 8).from, at(11, 55));
-  assert.deepEqual(M.lunches.map((l) => l.from), [at(10, 45), at(11, 30), at(12, 10), at(12, 40)]);
+  assert.deepEqual(M.lunches.map((l) => l.from), [at(10, 40), at(11, 30), at(11, 30), at(11, 55), at(12, 10), at(12, 35)]);
   assert.equal(M.blocks.at(-1).to, at(18, 5));
   await assert.rejects(shiftSchedule(q, { blockId: 3, minutes: 5, mode: 'start' }, A, at(11, 40), true), (e) => e.status === 409); // minulost
   await assert.rejects(shiftSchedule(q, { blockId: 9, minutes: -30, mode: 'start' }, A, at(11, 40), true), (e) => e.status === 409); // překryv

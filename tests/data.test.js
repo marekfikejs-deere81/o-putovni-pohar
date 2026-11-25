@@ -60,7 +60,8 @@ test('Rozpis 07:50–18:00 navazuje bez mezer, finále jen plocha A', () => {
   const final = games.find((x) => x.place === 1);
   assert.equal(final.rink, 'A');
   assert.equal(final.block.games.length, 1);
-  assert.equal(final.block.start, '17:05');
+  assert.equal(final.block.start, '16:55');
+  assert.equal(final.block.end, '17:30');
 });
 
 test('Mezi skupinovými zápasy týmu nejméně 50 minut', () => {
@@ -77,13 +78,13 @@ test('Přejímka „Časy“: hraniční okamžiky', () => {
   assert.equal(at('09:00').games.length, 0);
   assert.equal(at('09:15').start, '09:15');
   assert.equal(at('11:50').title, 'Úprava ledu + polední pauza');
-  assert.equal(at('12:49').title, 'Úprava ledu + polední pauza');
-  assert.equal(at('12:50').games.length, 2);
-  assert.equal(at('15:40').games.length, 2);
-  assert.equal(at('16:15').games.length, 2);
-  assert.equal(at('16:50').games.length, 0);
-  assert.deepEqual(at('17:05').games.map((x) => x.rink), ['A']);
-  assert.equal(at('17:40').title, 'Vyhlášení výsledků a předání cen');
+  assert.equal(at('12:39').title, 'Úprava ledu + polední pauza');
+  assert.equal(at('12:40').games.length, 2);
+  assert.equal(at('15:30').games.length, 2);
+  assert.equal(at('16:05').games.length, 2);
+  assert.equal(at('16:40').games.length, 0);
+  assert.deepEqual(at('16:55').games.map((x) => x.rink), ['A']);
+  assert.equal(at('17:30').title, 'Vyhlášení výsledků a předání cen');
   assert.equal(at('18:00'), null);
   const next = nextGameBlock(blocks, toMinutes('09:00'));
   assert.deepEqual(next.games.map((x) => `${x.home}×${x.away}`), ['BEN×LIT', 'SVE×PLZ']);
@@ -100,10 +101,12 @@ test('Přejímka „Stadion“: rotace 10 s při úpravě ledu v 09:10', () => {
   assert.deepEqual(icePhase(toMinutes('09:10'), s(40)), { view: 'krizova', group: 'A' });
 });
 
-test('Obědy: 4 okna po 30 min, nejvýše 3 týmy, 10 týmů, časy z kotev, žádná kolize s vlastním zápasem', () => {
+test('Obědy: 6 oken po 25–30 min, nejvýše 3 týmy v restauraci, 10 týmů, časy z kotev, žádná kolize s vlastním zápasem', () => {
   const windows = lunchWindows(lunches, blocks);
-  assert.equal(windows.length, 4);
-  assert.ok(windows.every((w) => w.to - w.from === 30 && w.teams.length <= 3));
+  assert.equal(windows.length, 6);
+  assert.ok(windows.every((w) => [25, 30].includes(w.to - w.from)));
+  // v každém okamžiku nejvýše 3 týmy v restauraci
+  for (const w of windows) assert.ok(windows.filter((o) => o.from <= w.from && o.to > w.from).reduce((n, o) => n + o.teams.length, 0) <= 3, w.start);
   assert.equal(new Set(windows.flatMap((w) => w.teams)).size, 10);
   for (const w of windows) {
     assert.equal(toHHMM(w.from), w.start);
@@ -116,7 +119,7 @@ test('Obědy: 4 okna po 30 min, nejvýše 3 týmy, 10 týmů, časy z kotev, ž�
   }
   // Posun rozpisu o +10 min od bloku 5 posune navázané obědy
   const shifted = blocks.map((b) => (b.from >= toMinutes('10:25') ? { ...b, from: b.from + 10, to: b.to + 10 } : b));
-  assert.equal(toHHMM(lunchWindows(lunches, shifted)[0].from), '10:55');
+  assert.equal(toHHMM(lunchWindows(lunches, shifted)[0].from), '10:50');
 });
 
 test('Cena obědu: 12 hráčů × 140 + 3 RT × 150 = 2 130 Kč', () => {

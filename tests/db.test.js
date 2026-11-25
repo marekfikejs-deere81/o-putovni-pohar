@@ -11,7 +11,7 @@ async function fresh() {
 }
 const quiet = () => {};
 
-test('Migrace + seed: 10 týmů, 20 + 5 utkání, 4 okna, 9 objednatelů, žádné výsledky', async () => {
+test('Migrace + seed: 10 týmů, 20 + 5 utkání, 6 oken, 9 objednatelů, žádné výsledky', async () => {
   const { exec, q } = await fresh();
   await migrate(exec, quiet);
   await seed(exec, quiet);
@@ -19,7 +19,7 @@ test('Migrace + seed: 10 týmů, 20 + 5 utkání, 4 okna, 9 objednatelů, žádn
     (SELECT count(*)::int FROM match WHERE place IS NOT NULL) p, (SELECT count(*)::int FROM lunch_window) w,
     (SELECT count(*)::int FROM order_key) k, (SELECT count(*)::int FROM order_key_team) kt,
     (SELECT count(*)::int FROM period) per, (SELECT count(*)::int FROM lunch_order) o`);
-  assert.deepEqual(c, { t: 10, g: 20, p: 5, w: 4, k: 9, kt: 10, per: 0, o: 0 });
+  assert.deepEqual(c, { t: 10, g: 20, p: 5, w: 6, k: 9, kt: 10, per: 0, o: 0 });
   const [vls] = await q(`SELECT array_agg(t.code ORDER BY t.code) codes FROM order_key_team k JOIN team t ON t.id = k.team_id WHERE k.key = 'VLS'`);
   assert.deepEqual(vls.codes, ['VLA', 'VLB']);
   const [dl] = await q(`SELECT to_char(lunch_deadline AT TIME ZONE 'UTC', 'YYYY-MM-DD HH24:MI') utc FROM tournament`);
@@ -37,7 +37,7 @@ test('Opakovaný seed a migrace nesmažou výsledky, objednávky ani přejmenov�
   await seed(exec, quiet);
   const [c] = await q(`SELECT (SELECT count(*)::int FROM period) per, (SELECT count(*)::int FROM lunch_order) o,
     (SELECT name FROM team WHERE code = 'BEN') n, (SELECT count(*)::int FROM schema_migrations) m`);
-  assert.deepEqual(c, { per: 1, o: 1, n: 'HC Lev Benešov (nový)', m: 8 });
+  assert.deepEqual(c, { per: 1, o: 1, n: 'HC Lev Benešov (nový)', m: 9 });
 });
 
 test('Databáze odmítne neplatné zápisy', async () => {

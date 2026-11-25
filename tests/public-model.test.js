@@ -29,7 +29,7 @@ test('Prázdný turnaj: model ze seedu, pořadí „–“, obědy z kotev, nasa
   assert.equal(m.matches.length, 25);
   assert.equal(m.groups.A.started, false);
   assert.ok(m.matches.filter((x) => x.place).every((x) => x.home === null && x.away === null));
-  assert.deepEqual(m.lunches.map((l) => l.from), [645, 690, 725, 755]); // 10:45, 11:30, 12:05, 12:35
+  assert.deepEqual(m.lunches.map((l) => l.from), [640, 690, 690, 715, 725, 750]); // 10:40, 11:30, 11:30, 11:55, 12:05, 12:30
   assert.equal(m.tournament.lunch.deadline, '2026-12-12T23:00:00Z');
   assert.deepEqual(m.tournament.lunch.prices, { player: 140, staff: 150 });
 });
