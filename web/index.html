@@ -231,7 +231,7 @@ function banner() {
 
 // ---------- Přehled ----------
 function matrix(g) {
-  const ids = M.teams.filter((t) => t.group === g).sort((a, b) => a.slot - b.slot).map((t) => t.id);
+  const ids = M.groups[g].order; // Vlašim vždy první
   const rows = M.groups[g].rows;
   const games = M.matches.filter((m) => m.place === null && ids.includes(m.home));
   const cell = (i, j) => {

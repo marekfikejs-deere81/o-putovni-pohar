@@ -69,3 +69,17 @@ test('Po dohrání obou skupin se nasadí utkání o umístění a vítěz finá
   m = await model();
   assert.equal(m.matches.find((x) => x.place === 1).winner, 'away');
 });
+
+test('Zobrazení: Vlašim první v křížové tabulce vždy, v pořadí jen do začátku skupiny', async () => {
+  const { exec, model } = await setup();
+  let m = await model();
+  const code = (id) => m.teams.find((t) => t.id === id).code;
+  assert.deepEqual(m.groups.A.order.map(code), ['VLA', 'BEN', 'CEB', 'MBL', 'LIT']);
+  assert.deepEqual(m.groups.B.order.map(code), ['VLB', 'SVE', 'SLA', 'KOB', 'PLZ']);
+  assert.deepEqual(m.groups.A.rows.map((r) => code(r.id)), ['VLA', 'BEN', 'CEB', 'MBL', 'LIT']);
+  await exec(P(0, 1, 3, 1)); // BEN × VLA 3:1 → Benešov vede
+  m = await model();
+  assert.equal(code(m.groups.A.rows[0].id), 'BEN');
+  assert.equal(code(m.groups.A.order[0]), 'VLA');
+  assert.equal(code(m.groups.B.rows[0].id), 'VLB'); // skupina B ještě nezačala
+});

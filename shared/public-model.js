@@ -37,6 +37,9 @@ export function buildPublicModel(raw) {
     .map((m) => ({ id: m.id, home: m.home_team, away: m.away_team, periods: periodsOf.get(m.id) || [] }));
   const manual = t.manual_order || null;
   const groups = {};
+  const teamById = new Map(teams.map((x) => [x.id, x]));
+  const isHome = (id) => (/Vlašim/i.test(teamById.get(id)?.name || '') ? 1 : 0);
+  const slotOf = (id) => teamById.get(id)?.slot ?? 99;
   for (const g of ['A', 'B']) {
     const ids = teams.filter((x) => x.group === g).map((x) => x.id);
     const lots = Object.fromEntries(raw.lots.filter((l) => l.grp === g).map((l) => [l.team_id, l.position]));
@@ -45,8 +48,13 @@ export function buildPublicModel(raw) {
     const isManual = Array.isArray(manual?.[g]);
     const rows = isManual ? applyManualOrder(res.rows, manual[g]) : res.rows;
     const finished = groupFinished(games);
+    // Zobrazení: domácí Vlašim vždy první v křížové tabulce; v pořadí první jen do začátku skupiny
+    // (pak platí skutečné řazení podle pravidel). Na výpočty pořadí a nasazení to nemá vliv.
+    const homeFirst = (list, idOf) => [...list].sort((a, b) => (isHome(idOf(b)) - isHome(idOf(a))) || slotOf(idOf(a)) - slotOf(idOf(b)));
+    const order = homeFirst(ids, (x) => x);
     groups[g] = {
-      started: res.started, finished, manual: isManual, rows,
+      started: res.started, finished, manual: isManual, order,
+      rows: res.started || isManual ? rows : homeFirst(rows, (r) => r.id),
       pendingLots: finished && !isManual ? pendingLots(rows) : [],
     };
   }

@@ -52,7 +52,7 @@ function toArena(M) {
   }
   const blocks = M.blocks.map((b, i) => ({ from: b.from, to: b.to, games: b.games, title: b.title, last: i === M.blocks.length - 1 }));
   const tables = ['A', 'B'].map((g) => {
-    const ids = M.teams.filter((t) => t.group === g).sort((a, b) => a.slot - b.slot).map((t) => t.id);
+    const ids = M.groups[g].order; // Vlašim vždy první
     const games = M.matches.filter((m) => m.place === null && ids.includes(m.home)).map((m) => m.id);
     const rank = M.groups[g].rows.map((r) => ({ id: r.id, rank: r.rank, z: r.played, p: r.points, f: r.goalsFor, a: r.goalsAgainst }));
     return { ids, games, rank, started: M.groups[g].started };
