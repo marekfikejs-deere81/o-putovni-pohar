@@ -14,6 +14,8 @@ main{max-width:530px;margin:auto;background:#fff;min-height:100vh;padding-bottom
 header{position:relative;background:#112f50;color:#fff;padding:18px 20px;display:flex;align-items:center;gap:14px;border-bottom:5px solid #52afe3}
 .gear{position:absolute;top:8px;right:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:#9fc9ea;border-radius:50%}
 .gear:hover,.gear:focus-visible{color:#fff;background:rgba(255,255,255,.12)}
+header .home{border:0;padding:0;background:none;cursor:pointer;border-radius:8px;flex:none;line-height:0}
+header .home:focus-visible{outline:3px solid #52afe3;outline-offset:2px}
 header img{width:57px;height:57px;object-fit:contain;border-radius:8px;background:#fff;padding:2px}
 header small{display:block;color:#cae8ff;font-size:12px;letter-spacing:.03em}
 header h1{font-size:24px;line-height:1.12;margin:3px 0}
@@ -125,7 +127,7 @@ footer a,footer button{color:#124f83;background:none;border:0;padding:4px 6px;mi
 <body>
 <main>
   <header>
-    <img src="loga/web/VLA.png" alt="HC Rytíři Vlašim">
+    <button class="home" data-page="prehled" data-home aria-label="Na úvod – Přehled, křížová tabulka" title="Na úvod"><img src="loga/web/VLA.png" alt="HC Rytíři Vlašim"></button>
     <div><small>HC RYTÍŘI VLAŠIM · 2. TŘÍDY</small><h1>O putovní pohár</h1><div>Vánoční turnaj · 28.&nbsp;12.&nbsp;2026</div></div>
     <a class="gear" href="admin.html" aria-label="Pořadatel – přihlášení" title="Pořadatel"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6a.5.5 0 0 0 .1-.6l-2-3.5a.5.5 0 0 0-.6-.2l-2.5 1a7.3 7.3 0 0 0-1.7-1l-.4-2.6a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0-.5.4l-.4 2.7a7.3 7.3 0 0 0-1.7 1l-2.5-1a.5.5 0 0 0-.6.2l-2 3.5a.5.5 0 0 0 .1.6L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6a.5.5 0 0 0-.1.6l2 3.5a.5.5 0 0 0 .6.2l2.5-1a7.3 7.3 0 0 0 1.7 1l.4 2.6a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.4l.4-2.7a7.3 7.3 0 0 0 1.7-1l2.5 1a.5.5 0 0 0 .6-.2l2-3.5a.5.5 0 0 0-.1-.6zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></a>
   </header>
@@ -416,6 +418,7 @@ document.addEventListener('click', (e) => {
   if (ex) { runExport(ex); return; }
   const p = e.target.closest('[data-page]');
   if (p) {
+    if (p.hasAttribute('data-home')) view = 'krizova';
     page = p.dataset.page; history.replaceState(null, '', `${location.search}#${page}`); render();
     const now = (page === 'program' || page === 'umisteni') && document.getElementById('nyni');
     if (now) now.scrollIntoView({ block: 'start' }); else window.scrollTo(0, 0);
