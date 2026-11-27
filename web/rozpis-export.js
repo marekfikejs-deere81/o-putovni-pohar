@@ -66,7 +66,8 @@ export async function drawSchedule(M, base = '') {
   text('Skupina A · plocha A (pod časomírou)', L + PAD, y + rowH / 2, { size: 26, bold: true, color: '#fff', max: half - 2 * PAD });
   text('Skupina B · plocha B (pod restaurací)', L + half + PAD, y + rowH / 2, { size: 26, bold: true, color: '#fff', max: half - 2 * PAD });
   const top = y; y += rowH;
-  const byGroup = (gr) => M.teams.filter((t) => t.group === gr).sort((a, b) => a.slot - b.slot);
+  // stejné pořadí jako v křížové tabulce (Vlašim první), označení podle pozice ve skupině
+  const byGroup = (gr) => (M.groups?.[gr]?.order || M.teams.filter((t) => t.group === gr).sort((a, b) => a.slot - b.slot).map((t) => t.id)).map((id) => M.teams.find((t) => t.id === id));
   const A = byGroup('A'), B = byGroup('B');
   for (let i = 0; i < Math.max(A.length, B.length); i++) {
     if (i % 2) rect(L, y, TW, rowH, ZEBRA);

@@ -36,17 +36,17 @@ test('Prázdný turnaj: model ze seedu, pořadí „–“, obědy z kotev, nasa
 
 test('Přejímka 0:0 a 1:2 + 5:3 přes databázi', async () => {
   const { exec, model } = await setup();
-  await exec(P(0, 1, 0, 0)); // BEN × VLA
+  await exec(P(0, 1, 0, 0)); // VLA × BEN
   let m = await model();
   const row = (g, code) => m.groups[g].rows.find((r) => r.id === m.teams.find((t) => t.code === code).id);
   assert.equal(m.groups.A.started, true);
   assert.equal(m.groups.B.started, false);
   assert.deepEqual([row('A', 'VLA').points, row('A', 'VLA').periods, row('A', 'VLA').draws], [1, 1, 1]);
-  await exec(P(1, 1, 1, 2)); // SVE × VLB
+  await exec(P(1, 1, 1, 2)); // VLB × SVE
   await exec(P(1, 2, 5, 3));
   m = await model();
   const vlb = row('B', 'VLB');
-  assert.deepEqual([vlb.goalsFor, vlb.goalsAgainst, vlb.points, vlb.played], [5, 6, 2, 1]);
+  assert.deepEqual([vlb.goalsFor, vlb.goalsAgainst, vlb.points, vlb.played], [6, 5, 2, 1]);
   assert.deepEqual(m.matches.find((x) => x.id === 1).periods, [[1, 2], [5, 3]]);
 });
 
@@ -77,7 +77,7 @@ test('Zobrazení: Vlašim první v křížové tabulce vždy, v pořadí jen do 
   assert.deepEqual(m.groups.A.order.map(code), ['VLA', 'BEN', 'CEB', 'MBL', 'LIT']);
   assert.deepEqual(m.groups.B.order.map(code), ['VLB', 'SVE', 'SLA', 'KOB', 'PLZ']);
   assert.deepEqual(m.groups.A.rows.map((r) => code(r.id)), ['VLA', 'BEN', 'CEB', 'MBL', 'LIT']);
-  await exec(P(0, 1, 3, 1)); // BEN × VLA 3:1 → Benešov vede
+  await exec(P(0, 1, 1, 3)); // VLA × BEN 1:3 → Benešov vede
   m = await model();
   assert.equal(code(m.groups.A.rows[0].id), 'BEN');
   assert.equal(code(m.groups.A.order[0]), 'VLA');

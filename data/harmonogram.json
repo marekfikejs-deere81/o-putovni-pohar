@@ -9,16 +9,16 @@
         "id": 0,
         "rink": "A",
         "place": null,
-        "home": "BEN",
-        "away": "VLA",
+        "home": "VLA",
+        "away": "BEN",
         "periods": []
       },
       {
         "id": 1,
         "rink": "B",
         "place": null,
-        "home": "SVE",
-        "away": "VLB",
+        "home": "VLB",
+        "away": "SVE",
         "periods": []
       }
     ]
