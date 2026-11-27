@@ -22,7 +22,7 @@ test('Prázdný turnaj: model ze seedu, pořadí „–“, obědy z kotev, nasa
   const m = await model();
   assert.equal(m.revision, 0);
   assert.equal(m.teams.length, 10);
-  assert.deepEqual(m.teams.filter((t) => t.group === 'A').map((t) => t.code), ['BEN', 'VLA', 'CEB', 'MBL', 'LIT']);
+  assert.deepEqual(m.teams.filter((t) => t.group === 'A').map((t) => t.code), ['VLA', 'BEN', 'CEB', 'MBL', 'LIT']);
   assert.equal(m.blocks.length, 20);
   assert.equal(m.blocks[0].from, 470); // 7:50
   assert.equal(m.blocks.at(-1).to, 1080);
