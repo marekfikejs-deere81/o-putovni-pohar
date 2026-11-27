@@ -37,7 +37,7 @@ test('Opakovaný seed a migrace nesmažou výsledky, objednávky ani přejmenov�
   await seed(exec, quiet);
   const [c] = await q(`SELECT (SELECT count(*)::int FROM period) per, (SELECT count(*)::int FROM lunch_order) o,
     (SELECT name FROM team WHERE code = 'BEN') n, (SELECT count(*)::int FROM schema_migrations) m`);
-  assert.deepEqual(c, { per: 1, o: 1, n: 'HC Lev Benešov (nový)', m: 12 });
+  assert.deepEqual(c, { per: 1, o: 1, n: 'HC Lev Benešov (nový)', m: 13 });
 });
 
 test('Databáze odmítne neplatné zápisy', async () => {

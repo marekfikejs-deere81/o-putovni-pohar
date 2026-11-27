@@ -33,7 +33,7 @@ ok('API běží (test)', health.ok, `revize ${health.revision}`);
 
 // ---------- 1) vyčištění testovacích dat ----------
 await q('BEGIN');
-for (const t of ['order_fail', 'shootout', 'period', 'lot', 'lunch_order_history', 'lunch_order', 'request_key', 'team_access', 'mail_outbox', 'parent_tip', 'report_pdf', 'propozice_pdf']) await q(`DELETE FROM ${t}`);
+for (const t of ['order_fail', 'result_change', 'shootout', 'period', 'lot', 'lunch_order_history', 'lunch_order', 'request_key', 'team_access', 'mail_outbox', 'parent_tip', 'report_pdf', 'propozice_pdf']) await q(`DELETE FROM ${t}`);
 await q(`UPDATE tournament SET manual_order = NULL, lunch_price_player_czk = 140, lunch_price_staff_czk = 150, lunch_deadline = '2026-12-13T00:00:00+01:00', revision = revision + 1`);
 await q('COMMIT');
 ok('Testovací data vyčištěna (Gmail a správce ponechány)', true);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { PGlite } from '@electric-sql/pglite';
 import { migrate, seed } from '../db/apply.mjs';
 import {
-  model, savePeriod, deletePeriod, setShootout, setLots, setManualOrder, shiftSchedule, updateTeam, addTip, updateTip, moveTip, deleteTip,
+  model, savePeriod, deletePeriod, setShootout, setLots, setManualOrder, shiftSchedule, updateTeam, addTip, updateTip, moveTip, deleteTip, resultChanges,
 } from '../worker/src/results.js';
 
 const A = 'admin:test';
@@ -174,4 +174,24 @@ test('Tipy: úprava a řazení šipkami', async () => {
   await assert.rejects(updateTip(q, 9999, { title: 'X' }, A), (e) => e.status === 404);
   await assert.rejects(updateTip(q, M.tips[0].id, { title: '' }, A), (e) => e.status === 422);
   await assert.rejects(moveTip(q, M.tips[0].id, 2, A), (e) => e.status === 422);
+});
+
+test('Změny zapsaných výsledků: první zápis není změna, opravy se zaznamenají s původním výsledkem', async () => {
+  const { q } = await setup();
+  await savePeriod(q, 0, 1, { home: 3, away: 1 }, A);
+  await savePeriod(q, 0, 2, { home: 1, away: 2 }, A);
+  assert.equal((await resultChanges(q)).length, 0);
+  await savePeriod(q, 0, 1, { home: 3, away: 1 }, A); // beze změny
+  assert.equal((await resultChanges(q)).length, 0);
+  await savePeriod(q, 0, 1, { home: 1, away: 3 }, A); // protest uznán
+  await deletePeriod(q, 0, 2, A);
+  await savePeriod(q, 0, 2, { home: 0, away: 0 }, A); // nový 2. poločas po smazání = první zápis
+  const ch = await resultChanges(q);
+  assert.equal(ch.length, 2);
+  assert.deepEqual(ch[0].before, { periods: [[3, 1], [1, 2]], shootout: null });
+  assert.deepEqual(ch[0].after, { periods: [[1, 3], [1, 2]], shootout: null });
+  assert.deepEqual(ch[1].after, { periods: [[1, 3]], shootout: null });
+  assert.ok(ch.every((c) => c.match_id === 0 && c.actor === A && c.at));
+  const M = await model(q);
+  assert.ok(!JSON.stringify(M).includes('[3,1]'), 'veřejný model původní výsledek neukazuje');
 });

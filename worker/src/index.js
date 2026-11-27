@@ -8,7 +8,7 @@ import {
   hashToken, isTokenShape, normalizeToken, adminLunchSettings, teamOrderView, submitTeamOrder, adminSaveOrder, adminListOrders, adminGenerateLinks,
 } from './orders.js';
 import { startOAuth, finishOAuth, gmailSend } from './gmail.js';
-import { savePeriod, deletePeriod, setShootout, setLots, clearLots, setManualOrder, shiftSchedule, updateTeam, addTip, updateTip, moveTip, deleteTip, auditLog } from './results.js';
+import { savePeriod, deletePeriod, setShootout, setLots, clearLots, setManualOrder, shiftSchedule, updateTeam, addTip, updateTip, moveTip, deleteTip, auditLog, resultChanges } from './results.js';
 import { processOutbox, maybeQueueSummary, queueTest, mailStatus, adminMailAction } from './mail.js';
 import { reportPdf } from './report.js';
 import { savePropozicePdf, deletePropozicePdf, loadPropozicePdf, MAX_PDF } from './files.js';
@@ -169,6 +169,7 @@ async function adminResultRoutes(request, env, ctx, url) {
     ['PUT', /^\/api\/admin\/tips\/(\d+)$/, (q, a, m, b) => updateTip(q, m[1], b, a)],
     ['POST', /^\/api\/admin\/tips\/(\d+)\/move$/, (q, a, m, b) => moveTip(q, m[1], Number(b?.dir), a)],
     ['GET', /^\/api\/admin\/audit$/, (q) => auditLog(q).then((rows) => ({ rows }))],
+    ['GET', /^\/api\/admin\/result-changes$/, (q) => resultChanges(q).then((rows) => ({ rows }))],
   ];
   for (const [method, re, fn] of R) {
     const m = url.pathname.match(re);

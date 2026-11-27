@@ -13,6 +13,9 @@ BEGIN
   REVOKE INSERT, UPDATE, DELETE ON admin_user FROM app_runtime;
   -- Audit a historie jsou jen pro zápis nových řádků.
   REVOKE UPDATE, DELETE ON audit_log, lunch_order_history FROM app_runtime;
+  IF to_regclass('public.result_change') IS NOT NULL THEN
+    REVOKE UPDATE, DELETE ON result_change FROM app_runtime;
+  END IF;
   -- Turnaj ani evidence migrací se z aplikace nemažou.
   REVOKE INSERT, DELETE ON tournament FROM app_runtime;
   REVOKE ALL ON schema_migrations FROM app_runtime;

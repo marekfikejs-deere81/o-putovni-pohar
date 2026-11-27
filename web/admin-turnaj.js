@@ -5,6 +5,8 @@ import { toHHMM } from './shared/schedule.js';
 const pts = (x, y) => (x > y ? 2 : x === y ? 1 : 0);
 let M = null;
 let openMatch = null;
+let unlocked = null;   // zápas odemčený pro změnu už zapsaného výsledku (protest)
+let changes = [];      // historie změn výsledků – jen pro Admin
 let shiftPreview = null;
 let orderDraft = null;
 
@@ -21,7 +23,10 @@ const logo = (id, esc) => (id != null ? `<img src="${esc(team(id).logo.web)}" al
 export async function renderResults(app, ctx, head) {
   const { esc } = ctx;
   app.innerHTML = `${ctx.tabs()}<div class="card">Načítání…</div>`;
-  try { await loadModel(ctx); } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
+  try {
+    await loadModel(ctx);
+    changes = await ctx.call('GET', '/api/admin/result-changes').then((r) => r.rows || [], (e) => { if (e.silent) throw e; return []; });
+  } catch (e) { if (!e.silent) app.innerHTML = `${ctx.head()}<div class="banner err">${esc(e.message)}</div>`; return; }
   const chip = (m) => {
     const n = m.periods.length;
     if (n === 2 && (!m.place || m.winner)) return '<span class="pill ok">dohráno</span>';
@@ -29,6 +34,7 @@ export async function renderResults(app, ctx, head) {
     if (n === 1) return '<span class="pill no" style="background:#e8f1fb;color:#124f83">1. poločas</span>';
     return '<span class="pill no">čeká</span>';
   };
+  const changed = (m) => { const n = changes.filter((c) => c.match_id === m.id).length; return n ? ` <span class="pill no" style="background:#fdeee0;color:#8a3d00">změněno ${n}×</span>` : ''; };
   const score = (m) => m.periods.length ? m.periods.map(([x, y]) => `${x}:${y}`).join(', ') : '';
   // Rychlá sekce: právě probíhající blok v den turnaje, jinak první blok s nedohraným zápasem
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Prague', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
@@ -39,79 +45,117 @@ export async function renderResults(app, ctx, head) {
   const quickHtml = quick ? `<section class="card" style="border:2px solid #40c38b"><h2 style="margin-bottom:4px">${quick.from <= nowMin && nowMin < quick.to ? 'Teď na ledě' : 'Na řadě'}</h2>
     <div class="muted">${toHHMM(quick.from)}–${toHHMM(quick.to)}</div>
     ${quick.games.map((id) => { const m = M.matches.find((x) => x.id === id); return `<div class="mrow" data-m="${m.id}" style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer">
-      <div style="display:flex;justify-content:space-between"><span class="muted">Plocha ${m.rink}${m.place ? ` · o ${m.place}. místo` : ''}</span>${chip(m)}</div>
+      <div style="display:flex;justify-content:space-between"><span class="muted">Plocha ${m.rink}${m.place ? ` · o ${m.place}. místo` : ''}</span><span>${chip(m)}${changed(m)}</span></div>
       <div><b>${esc(sideName(m, 'home'))}</b> × <b>${esc(sideName(m, 'away'))}</b> <span class="muted">${score(m)}</span></div></div>${openMatch === m.id ? editor(m, ctx) : ''}`; }).join('')}</section>` : '';
   const quickIds = new Set(quick ? quick.games : []);
   app.innerHTML = `${ctx.head()}${quickHtml}<section class="card"><h2>Všechny zápasy</h2>
     <div class="muted">Klepni na zápas. Každý poločas potvrď zvlášť – na web a stadion se dostane do 5 s. Branky včetně nájezdů za fauly.</div>
     ${M.blocks.filter((b) => b.games.length).map((b) => `<h3 style="margin:16px 0 6px">${toHHMM(b.from)}–${toHHMM(b.to)}</h3>
       ${b.games.map((id) => { const m = M.matches.find((x) => x.id === id); return `<div class="mrow" data-m="${m.id}" style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer">
-        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span class="muted">Plocha ${m.rink}${m.place ? ` · o ${m.place}. místo` : ''}</span>${chip(m)}</div>
+        <div style="display:flex;gap:8px;align-items:center;justify-content:space-between"><span class="muted">Plocha ${m.rink}${m.place ? ` · o ${m.place}. místo` : ''}</span><span>${chip(m)}${changed(m)}</span></div>
         <div><b>${esc(sideName(m, 'home'))}</b> × <b>${esc(sideName(m, 'away'))}</b> <span class="muted">${score(m)}</span></div></div>
         ${openMatch === m.id && !quickIds.has(m.id) ? editor(m, ctx) : ''}`; }).join('')}`).join('')}
     </section>`;
-  app.querySelectorAll('.mrow').forEach((r) => r.onclick = () => { openMatch = openMatch === Number(r.dataset.m) ? null : Number(r.dataset.m); renderResults(app, ctx, head); });
+  app.querySelectorAll('.mrow').forEach((r) => r.onclick = () => { openMatch = openMatch === Number(r.dataset.m) ? null : Number(r.dataset.m); unlocked = null; renderResults(app, ctx, head); });
   wireEditor(app, ctx, head);
   if (openMatch !== null) app.querySelector(`[data-ed="${openMatch}"]`)?.scrollIntoView({ block: 'nearest' });
 }
 
+// Zápis výsledku pro historii: „2:1, 1:1 · nájezdy VLA“
+function resultText(r) {
+  if (!r.periods.length) return 'bez výsledku';
+  return r.periods.map(([x, y]) => `${x}:${y}`).join(', ') + (r.shootout ? ` · nájezdy ${r.shootout === 'home' ? 'domácí' : 'hosté'}` : '');
+}
+function historyBox(m, esc) {
+  const list = changes.filter((c) => c.match_id === m.id);
+  if (!list.length) return '';
+  const when = (iso) => new Date(iso).toLocaleString('cs-CZ', { timeZone: 'Europe/Prague', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const so = (r) => resultText(r).replace('nájezdy domácí', `nájezdy ${team(m.home).code}`).replace('nájezdy hosté', `nájezdy ${team(m.away).code}`);
+  return `<div style="margin:10px 0;padding:10px;border:1px solid #f0c9a6;background:#fff8f1;border-radius:10px">
+    <b>Změny výsledku (${list.length})</b> <span class="muted">– vidí jen Admin</span>
+    <ol style="margin:6px 0 0 18px;padding:0">${list.map((c) => `<li style="margin:4px 0">${when(c.at)} · před změnou <b>${esc(so(c.before))}</b> → po změně <b>${esc(so(c.after))}</b><br><span class="muted">${esc(String(c.actor).replace(/^admin:/, ''))}</span></li>`).join('')}</ol></div>`;
+}
+
 function editor(m, ctx) {
   const { esc } = ctx;
+  // Dohraný (nebo rozehraný) zápas je zamčený; změnu je potřeba odemknout dvojím potvrzením.
+  const locked = m.periods.length > 0 && unlocked !== m.id;
   if (m.place && (m.home == null || m.away == null)) return `<div class="card" data-ed="${m.id}">Utkání o umístění ještě nemá nasazené týmy – čeká se na konečné pořadí skupin (nebo los / ruční pořadí).</div>`;
   const row = (no) => {
     const p = m.periods[no - 1];
     const can = no === 1 || m.periods.length >= 1;
     if (!can) return `<div class="muted" style="margin:8px 0">${no}. poločas – nejdřív potvrď 1. poločas</div>`;
     const isLast = m.periods.length === no;
+    const ro = p && locked ? 'readonly' : '';
     return `<form class="per" data-no="${no}" style="margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px">
       <div style="font-weight:700;margin-bottom:6px">${no}. poločas ${p ? `<span class="pill ok">potvrzeno ${p[0]}:${p[1]}</span>` : ''}</div>
       <div style="display:grid;grid-template-columns:1fr 70px 14px 70px 1fr;gap:6px;align-items:center">
         <span style="text-align:right">${logo(m.home, esc)} ${esc(team(m.home).code)}</span>
-        <input name="home" inputmode="numeric" pattern="[0-9]*" value="${p ? p[0] : ''}" aria-label="${no}. poločas ${esc(team(m.home).name)}" style="font-size:24px;text-align:center;font-weight:800">
+        <input name="home" inputmode="numeric" pattern="[0-9]*" value="${p ? p[0] : ''}" aria-label="${no}. poločas ${esc(team(m.home).name)}" ${ro} style="font-size:24px;text-align:center;font-weight:800${ro ? ';background:#eef1f4;color:#55697a' : ''}">
         <b style="text-align:center">:</b>
-        <input name="away" inputmode="numeric" pattern="[0-9]*" value="${p ? p[1] : ''}" aria-label="${no}. poločas ${esc(team(m.away).name)}" style="font-size:24px;text-align:center;font-weight:800">
+        <input name="away" inputmode="numeric" pattern="[0-9]*" value="${p ? p[1] : ''}" aria-label="${no}. poločas ${esc(team(m.away).name)}" ${ro} style="font-size:24px;text-align:center;font-weight:800${ro ? ';background:#eef1f4;color:#55697a' : ''}">
         <span>${esc(team(m.away).code)} ${logo(m.away, esc)}</span></div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn" type="submit">${p ? 'Opravit' : 'Potvrdit'} ${no}. poločas</button>
-      ${p && isLast ? `<button class="btn secondary" type="button" data-del="${no}">Smazat ${no}. poločas</button>` : ''}</div></form>`;
+      ${ro ? '' : `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn${p ? ' danger' : ''}" type="submit">${p ? 'Uložit změnu' : 'Potvrdit'} ${no}. poločas</button>
+      ${p && isLast ? `<button class="btn secondary" type="button" data-del="${no}">Smazat ${no}. poločas</button>` : ''}</div>`}</form>`;
   };
   let so = '';
   if (m.place && m.periods.length === 2) {
     const s = m.periods.reduce((a, [x, y]) => a + pts(x, y) - pts(y, x), 0);
     if (s === 0) so = `<div style="margin:10px 0;padding:10px;background:#fff7e0;border-radius:10px"><b>Shoda bodů – rozhodly nájezdy.</b> Vítěz:
-      <div style="display:flex;gap:8px;margin-top:6px">${['home', 'away'].map((w) => `<button class="btn ${m.shootout === w ? '' : 'secondary'}" data-so="${w}">${esc(team(m[w]).name)}</button>`).join('')}
-      ${m.shootout ? '<button class="btn secondary" data-so="">Zrušit</button>' : ''}</div></div>`;
+      ${m.shootout && locked ? `<b>${esc(team(m[m.shootout]).name)}</b>` : `<div style="display:flex;gap:8px;margin-top:6px">${['home', 'away'].map((w) => `<button class="btn ${m.shootout === w ? '' : 'secondary'}" data-so="${w}">${esc(team(m[w]).name)}</button>`).join('')}
+      ${m.shootout ? '<button class="btn secondary" data-so="">Zrušit</button>' : ''}</div>`}</div>`;
   }
-  return `<div class="card" data-ed="${m.id}" style="background:#f8fbff">${row(1)}${row(2)}${so}</div>`;
+  const bar = !m.periods.length ? '' : locked
+    ? '<div style="display:flex;justify-content:flex-end"><button class="btn secondary" type="button" data-unlock>Změnit zapsaný výsledek…</button></div>'
+    : '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;background:#fdeee0;border-radius:10px"><b style="color:#8a3d00">Režim změny výsledku</b><button class="btn secondary small" type="button" data-lock>Hotovo – zamknout</button></div>';
+  return `<div class="card" data-ed="${m.id}" style="background:#f8fbff">${bar}${row(1)}${row(2)}${so}${historyBox(m, esc)}</div>`;
 }
 
 function wireEditor(app, ctx, head) {
   const ed = app.querySelector('[data-ed]');
   if (!ed) return;
   const m = M.matches.find((x) => x.id === Number(ed.dataset.ed));
+  const name = `${team(m.home).name} × ${team(m.away).name}`;
+  const twice = (a, b) => confirm(a) && confirm(b);
+  ed.querySelector('[data-unlock]')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!twice(`Chceš změnit už zapsaný výsledek zápasu\n${name}?`, `Opravdu chceš výsledek změnit? (např. po uznaném protestu)\nKaždá změna se zaznamená i s původním výsledkem.`)) return;
+    unlocked = m.id; renderResults(app, ctx, head);
+  });
+  ed.querySelector('[data-lock]')?.addEventListener('click', (e) => { e.stopPropagation(); unlocked = null; renderResults(app, ctx, head); });
   ed.querySelectorAll('form.per').forEach((f) => {
     f.onsubmit = async (e) => {
       e.preventDefault();
       const no = Number(f.dataset.no);
       const h = f.home.value.trim(), a = f.away.value.trim();
       if (!/^\d{1,2}$/.test(h) || !/^\d{1,2}$/.test(a)) { alert('Zadej počty branek (celá čísla).'); return; }
-      if (!confirm(`${m.periods[no - 1] ? 'Opravit' : 'Potvrdit'} ${no}. poločas:\n${team(m.home).name} ${h} : ${a} ${team(m.away).name}?`)) return;
+      const prev = m.periods[no - 1];
+      if (prev) {
+        if (prev[0] === Number(h) && prev[1] === Number(a)) { alert('Výsledek je stejný jako zapsaný – není co měnit.'); return; }
+        if (!twice(`Uložit změnu ${no}. poločasu?\n${name}\npůvodně ${prev[0]}:${prev[1]} → nově ${h}:${a}`, `Opravdu ULOŽIT změnu výsledku?\n${no}. poločas: ${prev[0]}:${prev[1]} → ${h}:${a}\nZmění se tabulky, web i stadion.`)) return;
+      } else if (!confirm(`Potvrdit ${no}. poločas:\n${team(m.home).name} ${h} : ${a} ${team(m.away).name}?`)) return;
       f.querySelector('button[type=submit]').disabled = true;
-      try { await ctx.call('PUT', `/api/admin/matches/${m.id}/periods/${no}`, { home: Number(h), away: Number(a) }); ctx.flash('ok', `${no}. poločas uložen.`); }
+      try { await ctx.call('PUT', `/api/admin/matches/${m.id}/periods/${no}`, { home: Number(h), away: Number(a) }); ctx.flash('ok', prev ? `Změna ${no}. poločasu uložena a zaznamenána.` : `${no}. poločas uložen.`); }
       catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
       renderResults(app, ctx, head);
     };
   });
   ed.querySelectorAll('[data-del]').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation();
-    if (!confirm(`Opravdu smazat ${b.dataset.del}. poločas?`)) return;
-    try { await ctx.call('DELETE', `/api/admin/matches/${m.id}/periods/${b.dataset.del}`); ctx.flash('ok', 'Třetina smazána.'); }
+    const pr = m.periods[Number(b.dataset.del) - 1];
+    if (!twice(`Smazat ${b.dataset.del}. poločas (${pr[0]}:${pr[1]})?\n${name}`, `Opravdu SMAZAT ${b.dataset.del}. poločas? Změna se zaznamená.`)) return;
+    try { await ctx.call('DELETE', `/api/admin/matches/${m.id}/periods/${b.dataset.del}`); ctx.flash('ok', 'Poločas smazán a změna zaznamenána.'); }
     catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
     renderResults(app, ctx, head);
   });
   ed.querySelectorAll('[data-so]').forEach((b) => b.onclick = async (e) => {
     e.stopPropagation();
     const w = b.dataset.so || null;
-    if (w && !confirm(`Nájezdy vyhrál ${team(m[w]).name}?`)) return;
+    if (m.shootout) {
+      if (w === m.shootout) return;
+      const what = w ? `nájezdy vyhrál ${team(m[w]).name}` : 'zrušit výsledek nájezdů';
+      if (!twice(`Změnit nájezdy? Původně vyhrál ${team(m[m.shootout]).name}, nově: ${what}.`, `Opravdu ULOŽIT změnu nájezdů?`)) return;
+    } else if (w && !confirm(`Nájezdy vyhrál ${team(m[w]).name}?`)) return;
     try { await ctx.call('PUT', `/api/admin/matches/${m.id}/shootout`, { winner: w }); ctx.flash('ok', 'Nájezdy uloženy.'); }
     catch (err) { if (err.silent) return; ctx.flash('err', err.message); }
     renderResults(app, ctx, head);

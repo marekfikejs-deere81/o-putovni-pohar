@@ -12,7 +12,7 @@ const blocks = JSON.parse(readFileSync(new URL('../data/harmonogram.json', impor
 await q('BEGIN');
 try {
   const tables = ['order_fail', 'shootout', 'period', 'lot', 'lunch_order_history', 'lunch_order', 'request_key', 'team_access',
-    'mail_outbox', 'parent_tip', 'report_pdf', 'propozice_pdf', 'oauth_state', 'audit_log'];
+    'result_change', 'mail_outbox', 'parent_tip', 'report_pdf', 'propozice_pdf', 'oauth_state', 'audit_log'];
   for (const t of tables) { const r = await q(`DELETE FROM ${t}`); console.log(`✓ ${t}: smazáno ${r.rowCount}`); }
   for (const b of blocks) await q('UPDATE block SET start_min = $2, end_min = $3 WHERE id = $1', [b.id, toMinutes(b.start), toMinutes(b.end)]);
   await q('UPDATE lunch_window SET frozen_start = NULL');

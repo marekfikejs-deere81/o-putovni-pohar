@@ -32,6 +32,23 @@ async function guarded(q, fn) {
   });
 }
 
+// ---------- historie změn zapsaných výsledků ----------
+async function snapshot(q, matchId) {
+  const periods = (await q(`SELECT home_goals, away_goals FROM period WHERE match_id = $1 ORDER BY no`, [matchId])).map((r) => [r.home_goals, r.away_goals]);
+  const [so] = await q(`SELECT winner FROM shootout WHERE match_id = $1`, [matchId]);
+  return { periods, shootout: so?.winner ?? null };
+}
+/** Zaznamená změnu, pokud se už zapsaný výsledek opravdu změnil (první zápis změnou není). */
+async function recordChange(q, matchId, before, actor) {
+  const after = await snapshot(q, matchId);
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
+  await q(`INSERT INTO result_change (match_id, actor, before, after) VALUES ($1, $2, $3, $4)`, [matchId, actor, JSON.stringify(before), JSON.stringify(after)]);
+}
+export async function resultChanges(q) {
+  const rows = await q(`SELECT id, match_id, at, actor, before, after FROM result_change ORDER BY match_id, at, id`);
+  return rows.map((r) => ({ ...r, at: new Date(r.at).toISOString(), before: typeof r.before === 'string' ? JSON.parse(r.before) : r.before, after: typeof r.after === 'string' ? JSON.parse(r.after) : r.after }));
+}
+
 // ---------- poločasy ----------
 
 export async function savePeriod(q, matchId, no, body, actor) {
@@ -46,11 +63,13 @@ export async function savePeriod(q, matchId, no, body, actor) {
     if (m.place && (m.home == null || m.away == null)) throw new ApiError(409, 'Utkání o umístění ještě nemá nasazené týmy.');
     if (n === 2 && m.periods.length < 1) throw new ApiError(409, 'Nejdřív zapiš 1. poločas.');
     const [prev] = await q(`SELECT home_goals, away_goals FROM period WHERE match_id = $1 AND no = $2`, [m.id, n]);
+    const before = await snapshot(q, m.id);
     await q(`INSERT INTO period (match_id, no, home_goals, away_goals, confirmed_by) VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (match_id, no) DO UPDATE SET home_goals = EXCLUDED.home_goals, away_goals = EXCLUDED.away_goals,
              confirmed_by = EXCLUDED.confirmed_by, confirmed_at = now()`, [m.id, n, home, away, actor]);
     // Oprava poločasu může zrušit shodu bodů – nájezdy pak neplatí.
     if (m.place) await q(`DELETE FROM shootout WHERE match_id = $1`, [m.id]);
+    if (prev) await recordChange(q, m.id, before, actor);
     await audit(q, actor, prev ? 'period.correct' : 'period.confirm', prev ? { match: m.id, no: n, score: [prev.home_goals, prev.away_goals] } : null, { match: m.id, no: n, score: [home, away] });
     return { ok: true };
   });
@@ -62,8 +81,10 @@ export async function deletePeriod(q, matchId, no, actor) {
     const rows = await q(`SELECT no, home_goals, away_goals FROM period WHERE match_id = $1 ORDER BY no`, [Number(matchId)]);
     const last = rows.at(-1);
     if (!last || last.no !== n) throw new ApiError(409, 'Smazat lze jen poslední zapsaný poločas.');
+    const before = await snapshot(q, Number(matchId));
     await q(`DELETE FROM period WHERE match_id = $1 AND no = $2`, [Number(matchId), n]);
     await q(`DELETE FROM shootout WHERE match_id = $1`, [Number(matchId)]);
+    await recordChange(q, Number(matchId), before, actor);
     await audit(q, actor, 'period.delete', { match: Number(matchId), no: n, score: [last.home_goals, last.away_goals] }, null);
     return { ok: true };
   });
@@ -76,6 +97,7 @@ export async function setShootout(q, matchId, body, actor) {
   return guarded(q, async () => {
     const m = (await model(q)).matches.find((x) => x.id === Number(matchId));
     if (!m || !m.place) throw new ApiError(404, 'Nájezdy se zapisují jen u utkání o umístění.');
+    const before = await snapshot(q, m.id);
     if (winner === null) {
       await q(`DELETE FROM shootout WHERE match_id = $1`, [m.id]);
     } else {
@@ -86,6 +108,7 @@ export async function setShootout(q, matchId, body, actor) {
       await q(`INSERT INTO shootout (match_id, winner, decided_by) VALUES ($1, $2, $3)
                ON CONFLICT (match_id) DO UPDATE SET winner = EXCLUDED.winner, decided_by = EXCLUDED.decided_by, decided_at = now()`, [m.id, winner, actor]);
     }
+    if (before.shootout) await recordChange(q, m.id, before, actor);
     await audit(q, actor, 'shootout.set', null, { match: m.id, winner });
     return { ok: true };
   });
