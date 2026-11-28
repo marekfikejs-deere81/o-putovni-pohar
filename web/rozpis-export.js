@@ -245,7 +245,7 @@ export async function drawLunches(M, base = '') {
   const shifts = ws.every((l, i) => i === 0 || l.from >= ws[i - 1].to);
   const cz = (n) => ({ 1: 'jedna', 2: 'dvě', 3: 'tři', 4: 'čtyři' }[n] || n);
   const subtitleOld = `Začátek v ${hm(M.blocks[0].from)}${pause ? `, polední pauza ${hm(pause.from)}–${hm(pause.to)}` : ''} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'}, oběd ${minLen}`;
-  const subtitle = shifts ? `Začátek v ${hm(M.blocks[0].from)} · ${ws.length} ${ws.length < 5 ? 'směny' : 'směn'}, týmy se střídají` : subtitleOld;
+  const subtitle = shifts ? `Začátek v ${hm(M.blocks[0].from)} · nejvýše ${maxIn} ${maxIn === 1 ? 'tým' : maxIn < 5 ? 'týmy' : 'týmů'} v restauraci, týmy se střídají` : subtitleOld;
 
   const L0 = 148;
   const wrap = (str, size, bold, max) => {
@@ -274,7 +274,7 @@ export async function drawLunches(M, base = '') {
     const prev = uniq(each.map((e) => e.prevEnd)), next = uniq(each.map((e) => e.nextStart)), after = uniq(each.map((e) => e.after));
     // tučné názvy týmů, za nimi obyčejně délka oběda (když nemají všechna okna stejnou délku)
     const tokens = ts.map(lname).join(' + ').split(' ').map((w) => ({ w, b: true }));
-    if (lens.length > 1 && !shifts) `(${l.to - l.from} min)`.split(' ').forEach((w) => tokens.push({ w, b: false }));
+    if (lens.length > 1) `(${l.to - l.from} min)`.split(' ').forEach((w) => tokens.push({ w, b: false }));
     const maxW = cols[2] - cols[1] - 2 * PAD, teamLines = [];
     let cur = [], curW = 0;
     for (const tk of tokens) {
@@ -310,11 +310,15 @@ export async function drawLunches(M, base = '') {
   const excText = Object.entries(exc).map(([len, list]) => `${andJoin(list)} směna ${len} minut`).join(', ');
   const sizes = ws.map((l) => l.teams.length);
   const sizeText = Math.min(...sizes) === Math.max(...sizes) ? `${sizes[0]}` : `${Math.min(...sizes)}–${Math.max(...sizes)}`;
-  const note = [
-    shifts ? 'Týmy se v restauraci střídají po směnách: celá směna přichází a odchází společně, další směna přichází až po odchodu předchozí.' : `Oběd trvá ${minLen}${lens.length > 1 ? ' podle času do dalšího zápasu' : ''}.`,
-    shifts ? `Směna má ${sizeText} ${Math.max(...sizes) < 5 ? 'týmy' : 'týmů'}, oběd trvá ${common} minut${excText ? ` (${excText})` : ''}.` : `V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}.`,
-    bef.length ? `Po zápase je vždy nejméně ${Math.min(...bef)} minut na převlečení${aft.length ? `, nejkratší odstup od konce oběda do dalšího zápasu je ${Math.min(...aft)} minut.` : '.'}` : '',
-  ].join(' ').trim();
+  // převlečení: běžné minimum (≥ 15 min) a týmy, které mají méně
+  const lowTeams = per.flatMap((r) => r.each.filter((e) => e.before !== null && e.before < 15).map((e) => ({ name: lname(team1(e.id)), m: e.before })));
+  const okBef = bef.filter((v) => v >= 15);
+  const lowText = lowTeams.length ? ` (${andJoin(lowTeams.map((t) => t.name))} ${Math.min(...lowTeams.map((t) => t.m))} minut)` : '';
+  const gapless = ws.slice(1).filter((l, i) => l.from === ws[i].to).length * 2 >= ws.length - 1;
+  const changeText = bef.length ? `Po zápase je nejméně ${okBef.length ? Math.min(...okBef) : Math.min(...bef)} minut na převlečení${okBef.length ? lowText : ''}${aft.length ? `, nejkratší odstup od konce oběda do dalšího zápasu je ${Math.min(...aft)} minut.` : '.'}` : '';
+  const note = (shifts
+    ? [`V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}, směny se střídají${gapless ? ' bez pauzy' : ''}.`, `Oběd trvá ${minLen}.`, changeText]
+    : [`Oběd trvá ${minLen}${lens.length > 1 ? ' podle času do dalšího zápasu' : ''}.`, `V restauraci jsou vždy nejvýše ${words[maxIn] || `${maxIn} týmů`}.`, changeText]).join(' ').trim();
   y += 46;
   for (const ln of wrap(note, 28, false, TW - 2 * PAD)) { text(ln, L0, y, 28); y += 40; }
   stampAt(g, R, y + 10);

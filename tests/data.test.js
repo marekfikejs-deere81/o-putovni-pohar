@@ -101,9 +101,10 @@ test('Přejímka „Stadion“: rotace 10 s při úpravě ledu v 09:10', () => {
   assert.deepEqual(icePhase(toMinutes('09:10'), s(40)), { view: 'krizova', group: 'A' });
 });
 
-test('Obědy: 4 směny po 25–30 min, střídají se bez překryvu, nejvýše 3 týmy, 10 týmů, časy z kotev, žádná kolize s vlastním zápasem', () => {
+test('Obědy: 5 směn po 25–30 min, střídají se bez překryvu, nejvýše 2 týmy, 10 týmů, časy z kotev, žádná kolize s vlastním zápasem', () => {
   const windows = lunchWindows(lunches, blocks);
-  assert.equal(windows.length, 4);
+  assert.equal(windows.length, 5);
+  assert.ok(windows.every((w) => w.teams.length <= 2));
   for (let i = 1; i < windows.length; i++) assert.ok(windows[i].from >= windows[i - 1].to, `směna ${i + 1} začne až po předchozí`);
   assert.ok(windows.every((w) => [25, 30].includes(w.to - w.from)));
   // v každém okamžiku nejvýše 3 týmy v restauraci

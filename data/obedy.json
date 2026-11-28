@@ -10,35 +10,43 @@
     "offsetMinutes": 0
   },
   {
-    "start": "11:30",
-    "end": "11:55",
+    "start": "11:20",
+    "end": "11:50",
     "teams": [
       "MBL",
-      "KOB",
-      "LIT"
+      "KOB"
     ],
     "anchorBlockId": 7,
-    "offsetMinutes": 15
+    "offsetMinutes": 5
   },
   {
-    "start": "12:05",
-    "end": "12:30",
+    "start": "11:50",
+    "end": "12:15",
     "teams": [
-      "CEB",
-      "SLA",
+      "LIT",
       "PLZ"
     ],
     "anchorBlockId": 8,
-    "offsetMinutes": 15
+    "offsetMinutes": 0
   },
   {
-    "start": "12:35",
-    "end": "13:05",
+    "start": "12:15",
+    "end": "12:40",
+    "teams": [
+      "CEB",
+      "SLA"
+    ],
+    "anchorBlockId": 8,
+    "offsetMinutes": 25
+  },
+  {
+    "start": "12:40",
+    "end": "13:10",
     "teams": [
       "VLA",
       "VLB"
     ],
     "anchorBlockId": 8,
-    "offsetMinutes": 45
+    "offsetMinutes": 50
   }
 ]
